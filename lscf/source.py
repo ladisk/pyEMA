@@ -36,8 +36,10 @@ class lscf():
         
         self.frf_sel = self.frf[::1, self.sel_clip_up]
         self.frf_sel[:, self.sel_lower[:self.frf_sel.shape[1]]] = 0
+
+        self.frf_in = self.frf[:, self.select_freq]
         
-    def poles(self):
+    def get_poles(self):
         self.poles = []
         self.f_poles = []
         self.ceta = []
@@ -187,6 +189,42 @@ class lscf():
             self.pole_ind.append(pole_ind[0])
             self.nat_freq = nat_freq
             self.nat_ceta = nat_ceta
+
+    ######################################################################################
+    def lsfd(self, whose_poles='own'):
+        ndim = self.frf.ndim
+        if whose_poles == 'own':
+            poles = self.poles[-1][self.pole_ind]
+            n_poles = len(self.pole_ind)
+        else:
+            poles = whose_poles.poles[-1][whose_poles.pole_ind]
+            n_poles = len(whose_poles.pole_ind)
+        
+        w = np.append(-self.omega_sel[1:][::-1], self.omega_sel[1:])
+        alpha = np.append(self.frf_in[:, 1:].conjugate()[:, ::-1], self.frf_in[:, 1:], ndim-1)
+        TA = np.ones([len(w), n_poles], complex)
+        for n in range(n_poles):
+            TA[:, n] = 1/(1j*w - poles[n])
+        AT = np.linalg.pinv(TA)
+
+        if ndim == 1:
+            A_LSFD = np.dot(AT, self.frf_in)
+        elif ndim == 2:
+            IO = self.frf_in.shape[0]
+            A_LSFD = np.zeros([IO, n_poles], complex)
+            for v in range(IO):
+                A_LSFD[v, :] = np.dot(AT, alpha[v, :])
+        self.A_LSFD = A_LSFD
+        self.poles = poles
+        return A_LSFD
+
+    def FRF_reconstruct(self, FRF_ind):
+        FRF_true = np.zeros(len(self.omega), complex)
+        for n in range(self.A_LSFD.shape[1]-2):
+            FRF_true += (self.A_LSFD[FRF_ind, n]/(1j*self.omega - self.poles[n]))
+        FRF_true += self.A_LSFD[FRF_ind, -2]/(self.omega**2) + self.A_LSFD[FRF_ind, -1]
+        return FRF_true
+    ######################################################################################
     
     def modal_const(self, frf_loc, whos_poles='own', whos_inds='own', form = 'accelerance'):
         self.frf_loc = frf_loc
