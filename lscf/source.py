@@ -8,13 +8,17 @@ class lscf():
     """
     Least-Squares Complex Frequency-domain estimate.
     """
-    def __init__(self, frf, freq, lower, upper,pol_order_low,pol_order_high):
+    def __init__(self, frf, freq, lower, upper, pol_order_low, pol_order_high):
         """
         frf - FRF pri vseh lokacijah in frekvencah
         freq - 1D array frekvenc
         lower - najbolj spodnja opazovana frekvenca
         upper - najbolj zgornja opazovana frekvenca
         """
+        sel_in = (freq > lower) & (freq < upper)
+        self.frf_in = frf[:, sel_in]
+
+
         self.lower = lower
         self.upper = upper
         self.pol_order_low = pol_order_low
@@ -222,7 +226,7 @@ class lscf():
         FRF_true = np.zeros(len(self.omega), complex)
         for n in range(self.A_LSFD.shape[1]-2):
             FRF_true += (self.A_LSFD[FRF_ind, n]/(1j*self.omega - self.poles[n]))
-        FRF_true += self.A_LSFD[FRF_ind, -2]/(self.omega**2) + self.A_LSFD[FRF_ind, -1]
+        FRF_true += -self.A_LSFD[FRF_ind, -2]/(self.omega**2) + self.A_LSFD[FRF_ind, -1]
         return FRF_true
     ######################################################################################
     
