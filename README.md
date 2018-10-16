@@ -23,7 +23,12 @@ a.get_poles()
 ```
 a.stab_chart(a.all_poles, legend=False)
 ```
-2. If the approximate values of natural frequencies are already known, it is not necessary to display the stability chart as it is computationaly expensive:
+The stability chart displayes calculated poles and the user can hand-pick the stable ones. Reconstruction is done on-the-fly. In this case the reconstruction is not necessary since the user can access FRF matrix and modal constant matrix:
+```
+a.H # FRF matrix
+a.A # modal constants matrix
+```
+2. If the approximate values of natural frequencies are already known, it is not necessary to display the stability chart as it is computationally expensive:
 ```
 approx_nat_freq = [314, 864]
 a.identification(approx_nat_freq)

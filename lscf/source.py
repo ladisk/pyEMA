@@ -91,12 +91,25 @@ class lscf():
         >>> a.nat_freq #lastne frekvence
         >>> a.nat_ceta #modalno dušenje
         """
+        def replot(init=False):
+            """Replot the measured and reconstructed FRF based on new selected poles."""
+            ax2.clear()
+            ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
+            
+            if not init:
+                self.H, self.A = self.lsfd(whose_poles='own', FRF_ind='all')
+                ax2.semilogy(self.freq, np.average(np.abs(self.H), axis=0), color='r', lw=2)
+            
+            plt.xlim([self.lower, self.upper])
+            ax1.set_ylim([0, self.pol_order_high+5])
+
         Nmax = self.pol_order_high
         fn_temp, xi_temp, test_fn, test_xi = stabilisation(poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
         fig, ax1 = plt.subplots(figsize=(10, 4))
+        ax1.grid(True)
         ax2 = ax1.twinx()
-        plt.xlim(self.lower, self.upper)
+        replot(init=True)
         
         ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
         ax1.set_ylabel(r'Polynom order', fontsize=12)
@@ -118,17 +131,14 @@ class lscf():
         d=np.argwhere((test_fn==0) & (test_xi>0)) # unstable eigenfrequencues, stable damping ratios
 
         p1 = ax1.plot(fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx', markersize=3, label = "stable frequency, unstable damping")
-        p2 = ax1.plot(fn_temp[b[:, 0], b[:, 1]], 1+b[:, 1], 'gx', markersize=4, label = "stable frequency, stable damping")
+        p2 = ax1.plot(fn_temp[b[:, 0], b[:, 1]], 1+b[:, 1], 'gx', markersize=5, label = "stable frequency, stable damping")
         p3 = ax1.plot(fn_temp[c[:, 0], c[:, 1]], 1+c[:, 1], 'r.', markersize=3, label = "unstable frequency, unstable damping")
         p4 = ax1.plot(fn_temp[d[:, 0], d[:, 1]], 1+d[:, 1], 'r*', markersize=3, label = "unstable frequency, stable damping")
 
         if legend:
             ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), ncol=2, frameon=True)
-
-        ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
-        ax1.grid(True)
         plt.tight_layout()
-
+        
         print('Za izbiranje lastnih frekvenc uporabi SREDNJI gumb.\nZa izbris zadnje točke uporabi DESNI gumb.')
         self.nat_freq = []
         self.nat_xi = []
@@ -136,21 +146,22 @@ class lscf():
         
         line, = ax1.plot(self.nat_freq, np.repeat(self.pol_order_high, len(self.nat_freq)), 'kv', markersize=8)
         def onclick(event):
-            if event.button == 2: #če smo pritisnili gumb 2 (srednji na miški)
-                #identifikacija lastnih frekvenc in dušenja
-                self.identification([event.xdata], self.nat_freq, self.nat_xi, self.pole_ind) 
+            if event.button == 2: # če smo pritisnili gumb 2 (srednji na miški)
+                self.identification([event.xdata], self.nat_freq, self.nat_xi, self.pole_ind)
+                replot()
                 print(f'{len(self.nat_freq)}. frekvenca: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
             
             elif event.button == 3:
                 try:
-                    del self.nat_freq[-1] #izbrišemo zadnjo točko
+                    del self.nat_freq[-1] # izbrišemo zadnjo točko
                     del self.nat_xi[-1]
                     del self.pole_ind[-1]
+                    replot()
                     print('Izbrisana zadnja točka...')
                 except:
                     pass
 
-            line.set_xdata(np.asarray(self.nat_freq)) #posodobimo podatke
+            line.set_xdata(np.asarray(self.nat_freq)) # posodobimo podatke
             line.set_ydata(np.repeat(Nmax*1.04, len(self.nat_freq)))
             fig.canvas.draw() 
 
