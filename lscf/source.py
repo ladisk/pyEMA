@@ -16,116 +16,16 @@ class lscf():
         lower - najbolj spodnja opazovana frekvenca
         upper - najbolj zgornja opazovana frekvenca
         """
-        sel_in = (freq > lower) & (freq < upper)
-        sel_low = (freq < upper)
-
-        self.frf = np.asarray(frf)
-        self.frf_in = self.frf[:, sel_in]        
+        self.frf = np.asarray(frf)       
 
         self.lower = lower
         self.upper = upper
         self.pol_order_high = pol_order_high
 
         self.freq = freq
-        self.freq_in = freq[sel_in]
-        self.freq_low = freq[sel_low]
-
         self.omega = 2*np.pi*freq
-        self.omega_in = self.omega[sel_in]
-        self.omega_low = self.omega[sel_low]
 
         self.sampling_time = 1/(2*self.freq[-1])
-
-        # Odstranjevanje spodnjega dela spektra
-        # lower_ind = np.argmin(np.abs(freq - lower))
-        # self.frf_low = irfft_adjusted_lower_limit(frf, lower_ind, np.arange(-frf.shape[1], frf.shape[1]+1))
-
-        ########################################################################
-        # plt.semilogy(freq, np.abs(self.frf_low_1), label='1')
-        # plt.semilogy(freq, np.abs(self.frf_low_2[0]), '.-', label='2')
-        # plt.figure()
-        # plt.semilogy(freq, np.abs(self.frf_low[0]), label='Low')
-        # plt.semilogy(freq, np.abs(self.frf[0]), label='Orig')
-        # plt.legend()
-
-        # print(self.frf_low.shape)
-        ########################################################################
-
-        
-
-        # self.frf = np.asarray(frf) #frekenčne prenosne funkcije
-        # self.freq = freq #frekvence (vse!)
-        # self.omega = 2* np.pi * self.freq #krožne frekvence
-        
-        # self.select_freq = (self.freq >= self.lower) & (self.freq <= self.upper) #omejimo frekvence na zgornjo in spodnjo
-        # self.sel_clip_up = (self.freq >= 0) & (self.freq <= self.upper)#odstranimo zgornje frekvence
-        # self.sel_lower = (self.freq >= 0) & (self.freq <= self.lower)#izberemo samo spodnje frekvence
-        
-        # self.freq_sel = self.freq[self.sel_clip_up]
-        # self.omega_sel = self.omega[self.select_freq]
-        
-        # self.samp_time = 1/(2 * self.freq_sel[-1]-self.freq_sel[0])
-        
-        
-        # self.frf_sel = self.frf[::1, self.sel_clip_up]
-        # self.frf_sel[:, self.sel_lower[:self.frf_sel.shape[1]]] = 0
-
-        # self.frf_in = self.frf[:, self.select_freq]
-        
-    def get_poles_old(self):
-        # self.poles = []
-        # self.f_poles = []
-        # self.ceta = []
-        # self.cetaT = []
-
-        self.all_poles = []
-        self.pole_freq = []
-        self.pole_xi = []
-        
-        for n in tqdm(range(self.pol_order_low, self.pol_order_high)):
-            M = np.zeros((n+1, n+1), dtype=complex)
-            for Ho_ in self.frf_low:
-                S_fft = -1/(len(Ho_)) * np.real(np.fft.fft(Ho_, 2*len(Ho_)))
-                T_fft = 1/(len(Ho_)) * np.real(np.fft.fft(np.abs(Ho_)**2, 2*len(Ho_)))
-
-                S_col = S_fft[:n+1]
-                S_row = np.append(S_fft[-n:], S_fft[0])[::-1] 
-                T_col = T_fft[:n+1]
-
-                S = scipy.linalg.toeplitz(S_col, S_row) #S ni simetričen
-                T = scipy.linalg.toeplitz(T_col, T_col) #T je simetričen
-                R = np.identity(np.size(S, axis=0))     #če ne uporabljamo uteži je R enotska matrika
-
-                M += T - S.T @ np.linalg.inv(R) @ S
-            
-            M = 2 * M
-
-            A = M[:n, :n]
-            B = -M[:n, n]
-
-            x = np.linalg.inv(A) @ np.vstack(B)
-            est_alfa = np.append(x, 1)
-            # est_beta = -np.linalg.inv(R) @ S @ est_alfa
-
-            roots = np.roots(est_alfa[::-1])
-            poles = -np.log(roots)/self.sampling_time
-            # poles = 1/self.sampling_time * (np.log(np.abs(roots)) - 1j * np.angle(roots)) 
-
-            f_pole = np.imag(poles)/(2*np.pi)
-            ceta = -np.real(poles) / np.abs(poles)
-            # cetaT = -np.real(poles) / np.abs(poles)
-
-            self.all_poles.append(poles)
-            self.pole_freq.append(f_pole)
-            self.pole_xi.append(ceta)
-            # self.cetaT.append(cetaT)
-        
-        # Fast stab chart
-        # fig, ax1 = plt.subplots(figsize=(10, 4))
-        # ax2 = ax1.twinx()
-        # plt.xlim(0, self.upper)
-        # ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
-        # ax1.plot(self.pole_freq[-1], np.repeat(50, len(self.pole_freq[-1])), 'o')
 
     def get_poles(self):
         """Narejeno na podlagi Blažove in Jakove kode."""
@@ -171,14 +71,6 @@ class lscf():
             self.all_poles.append(poles)
             self.pole_freq.append(f_pole)
             self.pole_xi.append(ceta)
-
-        # Fast stab chart
-        # fig, ax1 = plt.subplots(figsize=(10, 4))
-        # ax2 = ax1.twinx()
-        # plt.xlim(0, self.upper)
-        # ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
-        # ax1.plot(self.pole_freq[-1], np.repeat(50, len(self.pole_freq[-1])), 'o')
-
 
     def stab_chart(self, poles, fn_temp=0.001, xi_temp=0.05, legend=False, latex_render=False, title=None):
         """
@@ -273,6 +165,18 @@ class lscf():
             plt.savefig(title)
 
     def identification(self, approx_nat_freq, nat_freq=None, nat_xi=None, pole_ind=None):
+        """Identification of natural frequency and dampling.
+        
+        :param approx_nat_freq: Approximate natural frequency value
+        :type approx_nat_freq: list
+        :param nat_freq: avaliable natural frequencies, defaults to None
+        :param nat_freq: list, optional
+        :param nat_xi: avaliable damping coeffitients, defaults to None
+        :param nat_xi: list, optional
+        :param pole_ind: chosen pole indices, defaults to None
+        :param pole_ind: list, optional
+        """
+
         pole_ind = []
         for i, fr in enumerate(approx_nat_freq):
             sel = np.argmin(np.abs(self.pole_freq[-1] - fr))
@@ -289,9 +193,16 @@ class lscf():
             self.nat_freq = nat_freq
             self.nat_xi = nat_xi
 
-    ######################################################################################
-    def modal_constants(self, whose_poles='own'):
-        ndim = self.frf_in.ndim
+    def lsfd(self, whose_poles='own', FRF_ind=None):
+        """
+        Modal constants and FRF reconstruction based on LSFD method.
+
+        :param whose_poles: Use own poles or poles from another object (object)
+        :param FRF_ind: 'all', None or int
+        :return: modal constants or reconstructed frf and modal constants
+        """
+        
+        ndim = self.frf.ndim
         if whose_poles == 'own':
             poles = self.all_poles[-1][self.pole_ind]
             n_poles = len(self.pole_ind)
@@ -318,9 +229,31 @@ class lscf():
                 A_LSFD[v, :] = np.dot(AT, alpha[v, :])
         self.A_LSFD = A_LSFD
         self.poles = poles
-        return A_LSFD
 
-    def FRF_reconstruct(self, FRF_ind): 
+        # FRF reconstruction
+        if FRF_ind is None:
+            return A_LSFD
+        elif FRF_ind == 'all':
+            n = self.frf.shape[0]
+            frf_ = np.zeros((n, len(self.omega)), complex)
+            for i in range(n):
+                frf_[i] = self.FRF_reconstruct(i)
+            return frf_, A_LSFD
+        elif isinstance(FRF_ind, int):
+            frf_ = self.FRF_reconstruct(FRF_ind)
+            return frf_, A_LSFD
+        else:
+            raise Exception('FRF_ind must be None, "all" or int')
+
+    def FRF_reconstruct(self, FRF_ind):
+        """Reconstruct FRF based on modal constants.
+        
+        :param FRF_ind: int or 'all'
+        :type FRF_ind: int, str
+        :return: Reconstructed FRF
+        :rtype: array
+        """
+
         FRF_true = np.zeros(len(self.omega), complex)
         for n in range(self.A_LSFD.shape[1]-2):
             FRF_true += (self.A_LSFD[FRF_ind, n] / (1j*self.omega - self.poles[n]))
@@ -328,141 +261,6 @@ class lscf():
         FRF_true += -self.A_LSFD[FRF_ind, -2]/(self.omega**2) + self.A_LSFD[FRF_ind, -1]
         return FRF_true
 
-    def lsfd(self, whose_poles):
-        """
-        LSFD (Least-Squares Frequency domain) method is used in order
-        to determine the residues and mode shapes from complex natural frquencies
-        and the measured frequency response functions.
-        :param lambdak: a vector of selected complex natural frequencies
-        :param f: frequecy vector
-        :param frf: frequency response functions
-        :return: reconstructed FRF, modal constant(residue), lower residual, upper residual
-
-        Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lsfd.py
-        """
-        frf = self.frf
-        f = self.freq
-        lambdak = whose_poles.all_poles[-1][whose_poles.pole_ind]
-
-        ndim = frf.ndim
-        if ndim == 3:
-            ni = frf.shape[0]  # number of references
-            no = frf.shape[1]  # number of responses
-            n = frf.shape[2]   # length of frequency vector
-        elif ndim == 2:
-            ni = 1
-            no = frf.shape[0]
-            n = frf.shape[1]
-        nmodes = lambdak.shape[0]  # number of modes
-
-        omega = 2 * np.pi * f  # angular frequency
-
-        # Factors in the freqeuncy response function
-        b = 1 / np.subtract.outer(1j * omega, lambdak).T
-        c = 1 / np.subtract.outer(1j * omega, np.conj(lambdak)).T
-
-        # Separate complex data to real and imaginary part
-        hr = frf.real
-        hi = frf.imag
-        br = b.real
-        bi = b.imag
-        cr = c.real
-        ci = c.imag
-
-        # Stack the data together in order to obtain 2D matrix
-        hri = np.dstack((hr, hi))
-        bri = np.hstack((br+cr, bi+ci))
-        cri = np.hstack((-bi+ci, br-cr))
-
-        ur_multiplyer = np.ones(n)
-        ur_zeros = np.zeros(n)
-        lr_multiplyer = -1/(omega**2)
-
-        urr = np.hstack((ur_multiplyer, ur_zeros))
-        uri = np.hstack((ur_zeros, ur_multiplyer))
-        lrr = np.hstack((lr_multiplyer, ur_zeros))
-        lri = np.hstack((ur_zeros, lr_multiplyer))
-
-        bcri = np.vstack((bri, cri, urr, uri, lrr, lri))
-
-        # Reshape 3D array to 2D for least squares coputation
-        hri = hri.reshape(ni*no, 2*n)
-
-        # Compute the modal constants (residuals) and upper and lower residuals
-        uv, _, _, _ = np.linalg.lstsq(bcri.T,hri.T, rcond=None)
-
-        # Reshape 2D results to 3D
-        uv = uv.T.reshape(ni, no, 2*nmodes+4)
-
-        u = uv[:, :, :nmodes]
-        v = uv[:, :, nmodes:-4]
-        urr = uv[:, :, -4]
-        uri = uv[:, :, -3]
-        lrr = uv[:, :, -2]
-        lri = uv[:, :, -1]
-
-        a = u + 1j * v  # Modal constant (residue)
-        ur = urr + 1j * uri  # Upper residual
-        lr = lrr + 1j * lri  # Lower residual
-
-        # Reconstructed FRF matrix
-        h = np.dot(uv, bcri)
-        h = h[:, :, :n] + 1j * h[:, :, n:]
-
-        return h, a, lr, ur
-    ######################################################################################
-    # Stara koda
-    def modal_const(self, frf_loc, whos_poles='own', whos_inds='own', form = 'accelerance'):
-        self.frf_loc = frf_loc
-        if whos_poles =='own':
-            poles = self.poles[-1][self.pole_ind]
-            n_poles = len(self.pole_ind)
-        else:
-            poles = whos_poles.poles[-1][whos_poles.pole_ind]
-            n_poles = len(whos_poles.pole_ind)
-
-        poles_mk = np.concatenate((poles, np.conj(poles)))
-
-        mk1 = self.frf[self.frf_loc, self.select_freq]
-        mk2 = np.zeros((len(self.omega_sel), 2*n_poles+2), dtype=complex)
-        for i in range(2*n_poles+2):
-            if i<2*n_poles:
-                mk2[:, i] = 1/(1j * self.omega_sel - poles_mk[i])
-            elif i==2*n_poles:
-                mk2[:, i] = -1/(self.omega_sel**2) #lower residual
-            elif i==2*n_poles+1:
-                mk2[:, i] = 1 #upper residual
-
-
-        mk2_m = np.ma.masked_invalid(mk2)
-        mk2_mask = np.ma.getmask(mk2_m)
-        mk2_m[mk2_mask] = 0
-
-        self.mk2 = np.copy(mk2_m)
-        self.mk3 = np.linalg.pinv(self.mk2) @ mk1.T
-    
-    def reconstruct(self, whos_poles='own', whos_inds='own'):
-        if whos_poles =='own':
-            poles = self.poles[-1][self.pole_ind]
-            n_poles = len(self.pole_ind)
-        else:
-            poles = whos_poles.poles[-1][whos_poles.pole_ind]
-            n_poles = len(whos_poles.pole_ind)
-            
-        poles_mk = np.concatenate((poles, np.conj(poles)))
-        
-        rek2 = np.zeros((len(self.omega[self.sel_clip_up]), 2*n_poles+2), dtype=complex)
-        for i in range(2*n_poles+2):
-            if i<2*n_poles:
-                rek2[:, i] = 1/(1j * self.omega[self.sel_clip_up] - poles_mk[i])
-            elif i==2*n_poles:
-                rek2[:, i] = -1/(self.omega[self.sel_clip_up]**2)
-            elif i==2*n_poles+1:
-                rek2[:, i] = 1
-                
-        self.rek = rek2 @ self.mk3 #rekonstrukcija
-        self.rekf = self.freq[self.sel_clip_up] #freq vektor rekonstrukcije
-    ######################################################################################
         
 def complex_freq_to_freq_and_damp(sr):
     """
@@ -478,6 +276,7 @@ def complex_freq_to_freq_and_damp(sr):
     fr /= (2 * np.pi)
 
     return fr, xir
+
 
 def redundant_values(omega, xi, prec):
     """
@@ -506,6 +305,7 @@ def redundant_values(omega, xi, prec):
     omega_mod = omega[np.argwhere(test<1)]
     xi_mod = xi[np.argwhere(test<1)]
     return omega_mod, xi_mod
+
 
 def stabilisation(sr, nmax, err_fn, err_xi):
     """
@@ -591,6 +391,7 @@ def stabilisation(sr, nmax, err_fn, err_xi):
 
     return fn_temp, xi_temp, test_fn, test_xi
 
+
 def irfft_adjusted_lower_limit(x, low_lim, indices):
     """
     Compute the ifft of real matrix x with adjusted summation limits:
@@ -609,10 +410,6 @@ def irfft_adjusted_lower_limit(x, low_lim, indices):
     nf = 2 * (x.shape[1] - 1)
     a = (np.fft.irfft(x, n=nf)[:, indices]) * nf
     b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
-    # plt.figure()
-    # plt.plot(a[3])
-    # plt.plot(a[3]-b[3])
-    # return np.fft.rfft(a - b, n=nf) / nf
     return a - b
 
 
