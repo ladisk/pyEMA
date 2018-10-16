@@ -53,7 +53,7 @@ class lscf():
         r = toeplitz(r)
 
         sr_list = []
-        for j in range(2, n+1, 2):
+        for j in tqdm(range(2, n+1, 2)):
             d = 0
             for i in range(nr):
                 rinv = np.linalg.inv(r[:j+1, :j+1])
@@ -117,24 +117,17 @@ class lscf():
         c=np.argwhere((test_fn==0) & (test_xi==0)) # unstable eigenfrequencues, unstable damping ratios
         d=np.argwhere((test_fn==0) & (test_xi>0)) # unstable eigenfrequencues, stable damping ratios
 
-        for i in range(0,len(a)):
-            p1 = ax1.plot(fn_temp[a[i,0], a[i,1]], 1+a[i,1], c='b', marker='x',markersize=3)
-        for j in range(0,len(b)):
-            p2 = ax1.plot(fn_temp[b[j,0], b[j,1]] ,1+b[j,1], c='g', marker='x',markersize=4)
-        for k in range(0,len(c)):
-            p3 = ax1.plot(fn_temp[c[k,0], c[k,1]], 1+c[k,1], c='r', marker='.',markersize=3)
-        for l in range(0,len(d)):
-            p4 = ax1.plot(fn_temp[d[l,0], d[l,1]], 1+d[l,1], c='r', marker='*',markersize=3)
-        
+        p1 = ax1.plot(fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx', markersize=3, label = "stable frequency, unstable damping")
+        p2 = ax1.plot(fn_temp[b[:, 0], b[:, 1]], 1+b[:, 1], 'gx', markersize=4, label = "stable frequency, stable damping")
+        p3 = ax1.plot(fn_temp[c[:, 0], c[:, 1]], 1+c[:, 1], 'r.', markersize=3, label = "unstable frequency, unstable damping")
+        p4 = ax1.plot(fn_temp[d[:, 0], d[:, 1]], 1+d[:, 1], 'r*', markersize=3, label = "unstable frequency, stable damping")
+
         if legend:
-            p1 = ax1.plot(fn_temp[a[i,0], a[i,1]], 1+a[i,1],'x', c='b', markersize=3,label = "stable frequency, unstable damping")
-            p2 = ax1.plot(fn_temp[b[j,0], b[j,1]] ,1+b[j,1],'x', c='g', markersize=4,label = "stable frequency, stable damping")
-            p3 = ax1.plot(fn_temp[c[k,0], c[k,1]], 1+c[k,1],'.', c='r', markersize=3,label = "unstable frequency, unstable damping")
-            p4 = ax1.plot(fn_temp[d[l,0], d[l,1]], 1+d[l,1],'*', c='r', markersize=3,label = "unstable frequency, stable damping")
-            ax1.legend(loc = 'best')
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.25), ncol=2, frameon=True)
 
         ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
         ax1.grid(True)
+        plt.tight_layout()
 
         print('Za izbiranje lastnih frekvenc uporabi SREDNJI gumb.\nZa izbris zadnje točke uporabi DESNI gumb.')
         self.nat_freq = []
@@ -144,8 +137,10 @@ class lscf():
         line, = ax1.plot(self.nat_freq, np.repeat(self.pol_order_high, len(self.nat_freq)), 'kv', markersize=8)
         def onclick(event):
             if event.button == 2: #če smo pritisnili gumb 2 (srednji na miški)
-                self.identification([event.xdata], self.nat_freq, self.nat_xi, self.pole_ind) #identifikacija lastnih frekvenc in dušenja
+                #identifikacija lastnih frekvenc in dušenja
+                self.identification([event.xdata], self.nat_freq, self.nat_xi, self.pole_ind) 
                 print(f'{len(self.nat_freq)}. frekvenca: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
+            
             elif event.button == 3:
                 try:
                     del self.nat_freq[-1] #izbrišemo zadnjo točko
