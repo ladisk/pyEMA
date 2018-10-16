@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import time
 import scipy.linalg
 from tqdm import tqdm_notebook as tqdm
+from scipy.linalg import toeplitz
 
 class lscf():
     """
     Least-Squares Complex Frequency-domain estimate.
     """
-    def __init__(self, frf, freq, lower, upper, pol_order_low, pol_order_high):
+    def __init__(self, frf, freq, lower, upper, pol_order_high):
         """
         frf - FRF pri vseh lokacijah in frekvencah
         freq - 1D array frekvenc
@@ -16,41 +17,74 @@ class lscf():
         upper - najbolj zgornja opazovana frekvenca
         """
         sel_in = (freq > lower) & (freq < upper)
-        self.frf_in = frf[:, sel_in]
+        sel_low = (freq < upper)
 
+        self.frf = np.asarray(frf)
+        self.frf_in = self.frf[:, sel_in]        
 
         self.lower = lower
         self.upper = upper
-        self.pol_order_low = pol_order_low
         self.pol_order_high = pol_order_high
 
-        self.frf = np.asarray(frf) #frekenčne prenosne funkcije
-        self.freq = freq #frekvence (vse!)
-        self.omega = 2* np.pi * self.freq #krožne frekvence
-        
-        self.select_freq = (self.freq >= self.lower) & (self.freq <= self.upper) #omejimo frekvence na zgornjo in spodnjo
-        self.sel_clip_up = (self.freq >= 0) & (self.freq <= self.upper)#odstranimo zgornje frekvence
-        self.sel_lower = (self.freq >= 0) & (self.freq <= self.lower)#izberemo samo spodnje frekvence
-        
-        self.freq_sel = self.freq[self.sel_clip_up]
-        self.omega_sel = self.omega[self.select_freq]
-        
-        self.samp_time = 1/(2 * self.freq_sel[-1]-self.freq_sel[0])
-        
-        
-        self.frf_sel = self.frf[::1, self.sel_clip_up]
-        self.frf_sel[:, self.sel_lower[:self.frf_sel.shape[1]]] = 0
+        self.freq = freq
+        self.freq_in = freq[sel_in]
+        self.freq_low = freq[sel_low]
 
-        self.frf_in = self.frf[:, self.select_freq]
+        self.omega = 2*np.pi*freq
+        self.omega_in = self.omega[sel_in]
+        self.omega_low = self.omega[sel_low]
+
+        self.sampling_time = 1/(2*self.freq[-1])
+
+        # Odstranjevanje spodnjega dela spektra
+        # lower_ind = np.argmin(np.abs(freq - lower))
+        # self.frf_low = irfft_adjusted_lower_limit(frf, lower_ind, np.arange(-frf.shape[1], frf.shape[1]+1))
+
+        ########################################################################
+        # plt.semilogy(freq, np.abs(self.frf_low_1), label='1')
+        # plt.semilogy(freq, np.abs(self.frf_low_2[0]), '.-', label='2')
+        # plt.figure()
+        # plt.semilogy(freq, np.abs(self.frf_low[0]), label='Low')
+        # plt.semilogy(freq, np.abs(self.frf[0]), label='Orig')
+        # plt.legend()
+
+        # print(self.frf_low.shape)
+        ########################################################################
+
         
-    def get_poles(self):
-        self.poles = []
-        self.f_poles = []
-        self.ceta = []
-        self.cetaT = []
+
+        # self.frf = np.asarray(frf) #frekenčne prenosne funkcije
+        # self.freq = freq #frekvence (vse!)
+        # self.omega = 2* np.pi * self.freq #krožne frekvence
+        
+        # self.select_freq = (self.freq >= self.lower) & (self.freq <= self.upper) #omejimo frekvence na zgornjo in spodnjo
+        # self.sel_clip_up = (self.freq >= 0) & (self.freq <= self.upper)#odstranimo zgornje frekvence
+        # self.sel_lower = (self.freq >= 0) & (self.freq <= self.lower)#izberemo samo spodnje frekvence
+        
+        # self.freq_sel = self.freq[self.sel_clip_up]
+        # self.omega_sel = self.omega[self.select_freq]
+        
+        # self.samp_time = 1/(2 * self.freq_sel[-1]-self.freq_sel[0])
+        
+        
+        # self.frf_sel = self.frf[::1, self.sel_clip_up]
+        # self.frf_sel[:, self.sel_lower[:self.frf_sel.shape[1]]] = 0
+
+        # self.frf_in = self.frf[:, self.select_freq]
+        
+    def get_poles_old(self):
+        # self.poles = []
+        # self.f_poles = []
+        # self.ceta = []
+        # self.cetaT = []
+
+        self.all_poles = []
+        self.pole_freq = []
+        self.pole_xi = []
+        
         for n in tqdm(range(self.pol_order_low, self.pol_order_high)):
             M = np.zeros((n+1, n+1), dtype=complex)
-            for Ho_ in self.frf_sel:
+            for Ho_ in self.frf_low:
                 S_fft = -1/(len(Ho_)) * np.real(np.fft.fft(Ho_, 2*len(Ho_)))
                 T_fft = 1/(len(Ho_)) * np.real(np.fft.fft(np.abs(Ho_)**2, 2*len(Ho_)))
 
@@ -71,21 +105,82 @@ class lscf():
 
             x = np.linalg.inv(A) @ np.vstack(B)
             est_alfa = np.append(x, 1)
-            est_beta = -np.linalg.inv(R) @ S @ est_alfa
+            # est_beta = -np.linalg.inv(R) @ S @ est_alfa
 
-            roots = np.roots(est_alfa[::-1]) 
-            poles = 1/self.samp_time * (np.log(np.abs(roots)) - 1j * np.angle(roots)) 
+            roots = np.roots(est_alfa[::-1])
+            poles = -np.log(roots)/self.sampling_time
+            # poles = 1/self.sampling_time * (np.log(np.abs(roots)) - 1j * np.angle(roots)) 
+
             f_pole = np.imag(poles)/(2*np.pi)
             ceta = -np.real(poles) / np.abs(poles)
-            cetaT = -np.real(poles) / np.abs(poles)
+            # cetaT = -np.real(poles) / np.abs(poles)
 
-            
-            self.poles.append(poles)
-            self.f_poles.append(f_pole)
-            self.ceta.append(ceta)
-            self.cetaT.append(cetaT)
+            self.all_poles.append(poles)
+            self.pole_freq.append(f_pole)
+            self.pole_xi.append(ceta)
+            # self.cetaT.append(cetaT)
+        
+        # Fast stab chart
+        # fig, ax1 = plt.subplots(figsize=(10, 4))
+        # ax2 = ax1.twinx()
+        # plt.xlim(0, self.upper)
+        # ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
+        # ax1.plot(self.pole_freq[-1], np.repeat(50, len(self.pole_freq[-1])), 'o')
 
-    def stab_chart(self,poles,fn_temp = 0.001, xi_temp= 0.05, legend = False,latex_render=False, title=None):
+    def get_poles(self):
+        """Narejeno na podlagi Blažove in Jakove kode."""
+        self.all_poles = []
+        self.pole_freq = []
+        self.pole_xi = []
+
+        lower_ind = np.argmin(np.abs(self.freq - self.lower))
+        n = self.pol_order_high * 2
+        nf = 2 * (self.frf.shape[1] - 1)
+        nr = self.frf.shape[0]
+
+        indices_s = np.arange(-n, n+1)
+        indices_t = np.arange(n+1)
+
+        sk = -irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
+        t = irfft_adjusted_lower_limit(self.frf.real**2 + self.frf.imag**2, lower_ind, indices_t)
+        r = -(np.fft.irfft(np.ones(lower_ind), n=nf))[indices_t]*nf
+        r[0] += nf
+
+        s = []
+        for i in range(nr):
+            s.append(toeplitz(sk[i, n:], sk[i, :n+1][::-1]))
+        t = toeplitz(np.sum(t[:, :n+1], axis=0))
+        r = toeplitz(r)
+
+        sr_list = []
+        for j in range(2, n+1, 2):
+            d = 0
+            for i in range(nr):
+                rinv = np.linalg.inv(r[:j+1, :j+1])
+                snew = s[i][:j+1, :j+1]
+                d -= np.dot(np.dot(snew[:j+1, :j+1].T, rinv), snew[:j+1, :j+1])   # sum
+            d += t[:j+1, :j+1]
+
+            a0an1 = np.linalg.solve(-d[0:j, 0:j], d[0:j, j])
+            sr = np.roots(np.append(a0an1, 1)[::-1])  # the numerator coefficients
+
+            poles = -np.log(sr) / self.sampling_time  # Z-domain (for discrete-time domain model)
+            f_pole = np.imag(poles)/(2*np.pi)
+            ceta = -np.real(poles) / np.abs(poles)
+
+            self.all_poles.append(poles)
+            self.pole_freq.append(f_pole)
+            self.pole_xi.append(ceta)
+
+        # Fast stab chart
+        fig, ax1 = plt.subplots(figsize=(10, 4))
+        ax2 = ax1.twinx()
+        plt.xlim(0, self.upper)
+        ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
+        ax1.plot(self.pole_freq[-1], np.repeat(50, len(self.pole_freq[-1])), 'o')
+
+
+    def stab_chart(self, poles, fn_temp=0.001, xi_temp=0.05, legend=False, latex_render=False, title=None):
         """
         Prikaz stabilizacijskega diagrame.
 
@@ -104,12 +199,12 @@ class lscf():
         >>> a.nat_freq #lastne frekvence
         >>> a.nat_ceta #modalno dušenje
         """
-        Nmax = self.pol_order_high-self.pol_order_low
-        fn_temp, xi_temp, test_fn, test_xi = stabilisation(poles ,Nmax,err_fn = fn_temp,err_xi =xi_temp)
+        Nmax = self.pol_order_high
+        fn_temp, xi_temp, test_fn, test_xi = stabilisation(poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
-        fig, ax1 = plt.subplots(figsize = (10,4))
+        fig, ax1 = plt.subplots(figsize=(10, 4))
         ax2 = ax1.twinx()
-        plt.xlim(self.lower,self.upper)
+        plt.xlim(self.lower, self.upper)
         
         ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
         ax1.set_ylabel(r'Polynom order', fontsize=12)
@@ -140,29 +235,29 @@ class lscf():
             p4 = ax1.plot(fn_temp[d[l,0], d[l,1]], 1+d[l,1], c='r', marker='*',markersize=3)
         
         if legend:
-            p1 = ax1.plot(fn_temp[a[i,0], a[i,1]], 1+a[i,1],'x', c='b',markersize=3,label = "stable frequency, unstable damping")
-            p2 = ax1.plot(fn_temp[b[j,0], b[j,1]] ,1+b[j,1],'x', c='g',markersize=4,label = "stable frequency, stable damping")
-            p3 = ax1.plot(fn_temp[c[k,0], c[k,1]], 1+c[k,1],'.', c='r',markersize=3,label = "unstable frequency, unstable damping")
-            p4 = ax1.plot(fn_temp[d[l,0], d[l,1]], 1+d[l,1],'*', c='r',markersize=3,label = "unstable frequency, stable damping")
+            p1 = ax1.plot(fn_temp[a[i,0], a[i,1]], 1+a[i,1],'x', c='b', markersize=3,label = "stable frequency, unstable damping")
+            p2 = ax1.plot(fn_temp[b[j,0], b[j,1]] ,1+b[j,1],'x', c='g', markersize=4,label = "stable frequency, stable damping")
+            p3 = ax1.plot(fn_temp[c[k,0], c[k,1]], 1+c[k,1],'.', c='r', markersize=3,label = "unstable frequency, unstable damping")
+            p4 = ax1.plot(fn_temp[d[l,0], d[l,1]], 1+d[l,1],'*', c='r', markersize=3,label = "unstable frequency, stable damping")
             ax1.legend(loc = 'best')
 
-        ax2.semilogy(self.freq_sel, np.average(np.abs(self.frf_sel), axis=0), alpha=0.7,color = 'k');
-        ax1.grid(True);
+        ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
+        ax1.grid(True)
 
         print('Za izbiranje lastnih frekvenc uporabi SREDNJI gumb.\nZa izbris zadnje točke uporabi DESNI gumb.')
         self.nat_freq = []
-        self.nat_ceta = []
+        self.nat_xi = []
         self.pole_ind = []
         
-        line, = ax1.plot(self.nat_freq, np.repeat(self.pol_order_high, len(self.nat_freq)),'kv',markersize = 8);
+        line, = ax1.plot(self.nat_freq, np.repeat(self.pol_order_high, len(self.nat_freq)), 'kv', markersize=8)
         def onclick(event):
             if event.button == 2: #če smo pritisnili gumb 2 (srednji na miški)
-                self.identification([event.xdata], self.nat_freq, self.nat_ceta, self.pole_ind) #identifikacija lastnih frekvenc in dušenja
+                self.identification([event.xdata], self.nat_freq, self.nat_xi, self.pole_ind) #identifikacija lastnih frekvenc in dušenja
                 print(f'{len(self.nat_freq)}. frekvenca: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
             elif event.button == 3:
                 try:
                     del self.nat_freq[-1] #izbrišemo zadnjo točko
-                    del self.nat_ceta[-1]
+                    del self.nat_xi[-1]
                     del self.pole_ind[-1]
                     print('Izbrisana zadnja točka...')
                 except:
@@ -177,36 +272,37 @@ class lscf():
         if title is not None:
             plt.savefig(title)
 
-    def identification(self, approx_nat_freq, nat_freq=None, nat_ceta=None, pole_ind=None):
+    def identification(self, approx_nat_freq, nat_freq=None, nat_xi=None, pole_ind=None):
         pole_ind = []
-        for i, fr in enumerate(approx_nat_freq):            
-            sel = np.argmin(np.abs(self.f_poles[-1] - fr))
-            pole_ind.append(np.argmin(np.abs(self.f_poles[-1] - self.f_poles[-1][sel])))
+        for i, fr in enumerate(approx_nat_freq):
+            sel = np.argmin(np.abs(self.pole_freq[-1] - fr))
+            pole_ind.append(np.argmin(np.abs(self.pole_freq[-1] - self.pole_freq[-1][sel])))
 
-        if nat_freq is None and nat_ceta is None:
-            self.nat_freq = self.f_poles[-1][pole_ind]
-            self.nat_ceta = self.ceta[-1][pole_ind]
+        if nat_freq is None and nat_xi is None:
+            self.nat_freq = self.pole_freq[-1][pole_ind]
+            self.nat_xi = self.pole_xi[-1][pole_ind]
             self.pole_ind = pole_ind
         else:
-            nat_freq.append(self.f_poles[-1][pole_ind][0])
-            nat_ceta.append(self.ceta[-1][pole_ind][0])
+            nat_freq.append(self.pole_freq[-1][pole_ind][0])
+            nat_xi.append(self.pole_xi[-1][pole_ind][0])
             self.pole_ind.append(pole_ind[0])
             self.nat_freq = nat_freq
-            self.nat_ceta = nat_ceta
+            self.nat_xi = nat_xi
 
     ######################################################################################
     def lsfd(self, whose_poles='own'):
-        ndim = self.frf.ndim
+        ndim = self.frf_in.ndim
         if whose_poles == 'own':
-            poles = self.poles[-1][self.pole_ind]
+            poles = self.all_poles[-1][self.pole_ind]
             n_poles = len(self.pole_ind)
         else:
-            poles = whose_poles.poles[-1][whose_poles.pole_ind]
+            poles = whose_poles.all_poles[-1][whose_poles.pole_ind]
             n_poles = len(whose_poles.pole_ind)
         
-        w = np.append(-self.omega_sel[1:][::-1], self.omega_sel[1:])
+        w = np.append(-self.omega_in[1:][::-1], self.omega_in[1:])
         alpha = np.append(self.frf_in[:, 1:].conjugate()[:, ::-1], self.frf_in[:, 1:], ndim-1)
         TA = np.ones([len(w), n_poles], complex)
+
         for n in range(n_poles):
             TA[:, n] = 1/(1j*w - poles[n])
         AT = np.linalg.pinv(TA)
@@ -222,14 +318,16 @@ class lscf():
         self.poles = poles
         return A_LSFD
 
-    def FRF_reconstruct(self, FRF_ind):
+    def FRF_reconstruct(self, FRF_ind): 
         FRF_true = np.zeros(len(self.omega), complex)
         for n in range(self.A_LSFD.shape[1]-2):
-            FRF_true += (self.A_LSFD[FRF_ind, n]/(1j*self.omega - self.poles[n]))
+            FRF_true += (self.A_LSFD[FRF_ind, n] / (1j*self.omega - self.poles[n]))
+            # FRF_true += (self.A_LSFD[FRF_ind, n].conj() / (1j*self.omega - self.poles[n]))
+
         FRF_true += -self.A_LSFD[FRF_ind, -2]/(self.omega**2) + self.A_LSFD[FRF_ind, -1]
         return FRF_true
     ######################################################################################
-    
+    # Stara koda
     def modal_const(self, frf_loc, whos_poles='own', whos_inds='own', form = 'accelerance'):
         self.frf_loc = frf_loc
         if whos_poles =='own':
@@ -280,7 +378,7 @@ class lscf():
                 
         self.rek = rek2 @ self.mk3 #rekonstrukcija
         self.rekf = self.freq[self.sel_clip_up] #freq vektor rekonstrukcije
-
+    ######################################################################################
         
 def complex_freq_to_freq_and_damp(sr):
     """
@@ -408,3 +506,108 @@ def stabilisation(sr, nmax, err_fn, err_xi):
                         xi_temp[i, n - 1] = xi[i]
 
     return fn_temp, xi_temp, test_fn, test_xi
+
+
+def irfft_adjusted_lower_limit(x, low_lim, indices):
+    """
+    Compute the ifft of real matrix x with adjusted summation limits:
+        y(j) = sum[k=-n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2,
+                   n-1] x[k] * exp(sqrt(-1)*j*k* 2*pi/n),
+        j =-n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
+    :param x: Single-sided real array to Fourier transform.
+    :param low_lim: lower limit index of the array x.
+    :param indices: list of indices of interest
+    :return: Fourier transformed two-sided array x with adjusted lower limit.
+             Retruns values.
+
+    Source: https://github.com/openmodal
+    """
+
+    nf = 2 * (x.shape[1] - 1)
+    a = (np.fft.irfft(x, n=nf)[:, indices]) * nf
+    b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
+    # plt.figure()
+    # plt.plot(a[3])
+    # plt.plot(a[3]-b[3])
+    # return np.fft.rfft(a - b, n=nf) / nf
+    return a - b
+
+
+def fft_adjusted_lower_limit(x, lim, nr):
+    """
+    Compute the fft of complex matrix x with adjusted summation limits:
+        y(j) = sum[k=-n-1, -n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2,
+                   n-1] x[k] * exp(-sqrt(-1)*j*k* 2*pi/n),
+        j = -n-1, -n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
+    :param x: Single-sided complex array to Fourier transform.
+    :param lim: lower limit index of the array x.
+    :param nr: number of points of interest
+    :return: Fourier transformed two-sided array x with adjusted lower limit.
+             Retruns [0, -1, -2, ..., -nr+1] and [0, 1, 2, ... , nr-1] values.
+    """
+    nf = 2 * (x.shape[1] - lim) - 1
+
+    n = np.arange(-nr + 1, nr)
+
+    a = np.fft.fft(x, n=nf).real[:, n]
+    b = np.fft.fft(x[:lim], n=nf).real[:, n]
+    c = x[0, lim].conj() * np.exp(1j * 2 * np.pi * n * lim / nf)
+
+    res = 2 * (a - b) - c
+
+    return res[:nr][::-1], res[nr - 1:]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
