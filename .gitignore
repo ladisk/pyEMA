@@ -3,6 +3,7 @@ __pycache__/
 lscf/__pycache__/
 *.py[cod]
 *$py.class
+.vscode/
 
 # C extensions
 *.so
