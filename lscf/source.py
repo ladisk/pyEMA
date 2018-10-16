@@ -173,11 +173,11 @@ class lscf():
             self.pole_xi.append(ceta)
 
         # Fast stab chart
-        fig, ax1 = plt.subplots(figsize=(10, 4))
-        ax2 = ax1.twinx()
-        plt.xlim(0, self.upper)
-        ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
-        ax1.plot(self.pole_freq[-1], np.repeat(50, len(self.pole_freq[-1])), 'o')
+        # fig, ax1 = plt.subplots(figsize=(10, 4))
+        # ax2 = ax1.twinx()
+        # plt.xlim(0, self.upper)
+        # ax2.semilogy(self.freq, np.average(np.abs(self.frf), axis=0), alpha=0.7, color='k')
+        # ax1.plot(self.pole_freq[-1], np.repeat(50, len(self.pole_freq[-1])), 'o')
 
 
     def stab_chart(self, poles, fn_temp=0.001, xi_temp=0.05, legend=False, latex_render=False, title=None):
@@ -290,7 +290,7 @@ class lscf():
             self.nat_xi = nat_xi
 
     ######################################################################################
-    def lsfd(self, whose_poles='own'):
+    def modal_constants(self, whose_poles='own'):
         ndim = self.frf_in.ndim
         if whose_poles == 'own':
             poles = self.all_poles[-1][self.pole_ind]
@@ -299,19 +299,21 @@ class lscf():
             poles = whose_poles.all_poles[-1][whose_poles.pole_ind]
             n_poles = len(whose_poles.pole_ind)
         
-        w = np.append(-self.omega_in[1:][::-1], self.omega_in[1:])
-        alpha = np.append(self.frf_in[:, 1:].conjugate()[:, ::-1], self.frf_in[:, 1:], ndim-1)
-        TA = np.ones([len(w), n_poles], complex)
+        w = np.append(-self.omega[1:][::-1], self.omega[1:])
+        alpha = np.append(self.frf[:, 1:].conjugate()[:, ::-1], self.frf[:, 1:], ndim-1)
+        TA = np.ones([len(w), n_poles+2], complex)
 
         for n in range(n_poles):
             TA[:, n] = 1/(1j*w - poles[n])
+        TA[:, -2] = -1/w**2
+        TA[:, -1] = np.ones_like(w)
         AT = np.linalg.pinv(TA)
 
         if ndim == 1:
-            A_LSFD = np.dot(AT, self.frf_in)
+            A_LSFD = np.dot(AT, self.frf)
         elif ndim == 2:
-            IO = self.frf_in.shape[0]
-            A_LSFD = np.zeros([IO, n_poles], complex)
+            IO = self.frf.shape[0]
+            A_LSFD = np.zeros([IO, n_poles+2], complex)
             for v in range(IO):
                 A_LSFD[v, :] = np.dot(AT, alpha[v, :])
         self.A_LSFD = A_LSFD
@@ -322,10 +324,92 @@ class lscf():
         FRF_true = np.zeros(len(self.omega), complex)
         for n in range(self.A_LSFD.shape[1]-2):
             FRF_true += (self.A_LSFD[FRF_ind, n] / (1j*self.omega - self.poles[n]))
-            # FRF_true += (self.A_LSFD[FRF_ind, n].conj() / (1j*self.omega - self.poles[n]))
 
         FRF_true += -self.A_LSFD[FRF_ind, -2]/(self.omega**2) + self.A_LSFD[FRF_ind, -1]
         return FRF_true
+
+    def lsfd(self, whose_poles):
+        """
+        LSFD (Least-Squares Frequency domain) method is used in order
+        to determine the residues and mode shapes from complex natural frquencies
+        and the measured frequency response functions.
+        :param lambdak: a vector of selected complex natural frequencies
+        :param f: frequecy vector
+        :param frf: frequency response functions
+        :return: reconstructed FRF, modal constant(residue), lower residual, upper residual
+
+        Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lsfd.py
+        """
+        frf = self.frf
+        f = self.freq
+        lambdak = whose_poles.all_poles[-1][whose_poles.pole_ind]
+
+        ndim = frf.ndim
+        if ndim == 3:
+            ni = frf.shape[0]  # number of references
+            no = frf.shape[1]  # number of responses
+            n = frf.shape[2]   # length of frequency vector
+        elif ndim == 2:
+            ni = 1
+            no = frf.shape[0]
+            n = frf.shape[1]
+        nmodes = lambdak.shape[0]  # number of modes
+
+        omega = 2 * np.pi * f  # angular frequency
+
+        # Factors in the freqeuncy response function
+        b = 1 / np.subtract.outer(1j * omega, lambdak).T
+        c = 1 / np.subtract.outer(1j * omega, np.conj(lambdak)).T
+
+        # Separate complex data to real and imaginary part
+        hr = frf.real
+        hi = frf.imag
+        br = b.real
+        bi = b.imag
+        cr = c.real
+        ci = c.imag
+
+        # Stack the data together in order to obtain 2D matrix
+        hri = np.dstack((hr, hi))
+        bri = np.hstack((br+cr, bi+ci))
+        cri = np.hstack((-bi+ci, br-cr))
+
+        ur_multiplyer = np.ones(n)
+        ur_zeros = np.zeros(n)
+        lr_multiplyer = -1/(omega**2)
+
+        urr = np.hstack((ur_multiplyer, ur_zeros))
+        uri = np.hstack((ur_zeros, ur_multiplyer))
+        lrr = np.hstack((lr_multiplyer, ur_zeros))
+        lri = np.hstack((ur_zeros, lr_multiplyer))
+
+        bcri = np.vstack((bri, cri, urr, uri, lrr, lri))
+
+        # Reshape 3D array to 2D for least squares coputation
+        hri = hri.reshape(ni*no, 2*n)
+
+        # Compute the modal constants (residuals) and upper and lower residuals
+        uv, _, _, _ = np.linalg.lstsq(bcri.T,hri.T, rcond=None)
+
+        # Reshape 2D results to 3D
+        uv = uv.T.reshape(ni, no, 2*nmodes+4)
+
+        u = uv[:, :, :nmodes]
+        v = uv[:, :, nmodes:-4]
+        urr = uv[:, :, -4]
+        uri = uv[:, :, -3]
+        lrr = uv[:, :, -2]
+        lri = uv[:, :, -1]
+
+        a = u + 1j * v  # Modal constant (residue)
+        ur = urr + 1j * uri  # Upper residual
+        lr = lrr + 1j * lri  # Lower residual
+
+        # Reconstructed FRF matrix
+        h = np.dot(uv, bcri)
+        h = h[:, :, :n] + 1j * h[:, :, n:]
+
+        return h, a, lr, ur
     ######################################################################################
     # Stara koda
     def modal_const(self, frf_loc, whos_poles='own', whos_inds='own', form = 'accelerance'):
@@ -507,7 +591,6 @@ def stabilisation(sr, nmax, err_fn, err_xi):
 
     return fn_temp, xi_temp, test_fn, test_xi
 
-
 def irfft_adjusted_lower_limit(x, low_lim, indices):
     """
     Compute the ifft of real matrix x with adjusted summation limits:
@@ -531,31 +614,6 @@ def irfft_adjusted_lower_limit(x, low_lim, indices):
     # plt.plot(a[3]-b[3])
     # return np.fft.rfft(a - b, n=nf) / nf
     return a - b
-
-
-def fft_adjusted_lower_limit(x, lim, nr):
-    """
-    Compute the fft of complex matrix x with adjusted summation limits:
-        y(j) = sum[k=-n-1, -n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2,
-                   n-1] x[k] * exp(-sqrt(-1)*j*k* 2*pi/n),
-        j = -n-1, -n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
-    :param x: Single-sided complex array to Fourier transform.
-    :param lim: lower limit index of the array x.
-    :param nr: number of points of interest
-    :return: Fourier transformed two-sided array x with adjusted lower limit.
-             Retruns [0, -1, -2, ..., -nr+1] and [0, 1, 2, ... , nr-1] values.
-    """
-    nf = 2 * (x.shape[1] - lim) - 1
-
-    n = np.arange(-nr + 1, nr)
-
-    a = np.fft.fft(x, n=nf).real[:, n]
-    b = np.fft.fft(x[:lim], n=nf).real[:, n]
-    c = x[0, lim].conj() * np.exp(1j * 2 * np.pi * n * lim / nf)
-
-    res = 2 * (a - b) - c
-
-    return res[:nr][::-1], res[nr - 1:]
 
 
 
