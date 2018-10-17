@@ -11,7 +11,13 @@ class lscf():
     Least-Squares Complex Frequency-domain estimate.
     """
 
-    def __init__(self, frf, freq, lower, upper, pol_order_high):
+    def __init__(self, 
+        frf=None, 
+        freq=None, 
+        lower=50, 
+        upper=10000, 
+        pol_order_high=100, 
+        pyfrf=False):
         """The LSCF method is an frequency-domain Linear Least Squares
         estimator optimized  for modal parameter estimation. The choice of
         the most important algorithm characteristics is based on the
@@ -65,7 +71,7 @@ class lscf():
                 Universiteit Brussel, LMS International
 
 
-        :param frf: Frequency response function matrix
+        :param frf: Frequency response function matrix (must be receptance!)
         :type frf: ndarray
         :param freq: Frequency array
         :type freq: array
@@ -76,18 +82,76 @@ class lscf():
         :param pol_order_high: Highest order of the polynomial
         :type pol_order_high: int
         """
+        if pyfrf:
+            self.frf = 0
+        elif not pyfrf and frf is not None and freq is not None:
+            try:
+                self.frf = np.asarray(frf)
+            except:
+                raise Exception('cannot contert frf to numpy ndarray')
+            if self.frf.ndim == 1:
+                self.frf = np.array([self.frf])
 
-        self.frf = np.asarray(frf)
+            try:
+                self.freq = np.asarray(freq)
+            except:
+                raise Exception('cannot convert freq to numpy array')
+            if self.freq.ndim != 1:
+                raise Exception(
+                    f'ndim of freq is not equal to 1 ({self.freq.ndim})')
+        else:
+            raise Exception('input arguments are not defined')
 
-        self.lower = lower
-        self.upper = upper
-        self.pol_order_high = int(pol_order_high)
+        try:
+            self.lower = float(lower)
+        except:
+            raise Exception('lower must be float or integer')
+        if self.lower < 0:
+            raise Exception('lower must be positive or equal to zero')
 
-        self.freq = freq
-        self.omega = 2*np.pi*freq
+        try:
+            self.upper = float(upper)
+        except:
+            raise Exception('upper must be flaot or integer')
+        if self.upper < self.lower:
+            raise Exception('upper must be greater than lower')
 
+        try:
+            self.pol_order_high = int(pol_order_high)
+        except:
+            raise Exception('cannot convert pol_order_high to integer')
+        if self.pol_order_high <= 0:
+            raise Exception('pol_order_high must be positive')
+
+        if not pyfrf:
+            self.omega = 2 * np.pi * self.freq
+            self.sampling_time = 1/(2*self.freq[-1])
+
+    def add_frf(self, pyfrf_object):
+        """Add a FRF at a next location.
+
+        This method can be used in relation to pyFRF from Open Modal (https://github.com/openmodal)
+
+        >>> for file in files:
+        >>>     lvm_data = lvm
+        
+        :param pyfrf_object: FRF object from pyFRF
+        :type pyfrf_object: object
+        """
+        freq = pyfrf_object.get_f_axis()
+        sel = (freq >= 1.0)
+
+        self.freq = freq[sel]
+        self.omega = 2 * np.pi * self.freq
         self.sampling_time = 1/(2*self.freq[-1])
 
+        new_frf = np.vstack(pyfrf_object.get_FRF(form='receptance')[sel])
+
+        if isinstance(self.frf, int):
+            self.frf = new_frf.T
+        else:
+            self.frf = np.concatenate((self.frf, new_frf.T), axis=0)
+        
     def get_poles(self):
         """Compute poles.
 
