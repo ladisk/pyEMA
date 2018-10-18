@@ -126,6 +126,7 @@ class lscf():
         if not pyfrf:
             self.omega = 2 * np.pi * self.freq
             self.sampling_time = 1/(2*self.freq[-1])
+            # self.sampling_time = 1/51200
 
     def add_frf(self, pyfrf_object):
         """Add a FRF at a next location.
@@ -139,7 +140,7 @@ class lscf():
         :type pyfrf_object: object
         """
         freq = pyfrf_object.get_f_axis()
-        sel = (freq >= 1.0)
+        sel = (freq >= 1.0e-1)
 
         self.freq = freq[sel]
         self.omega = 2 * np.pi * self.freq
@@ -198,8 +199,10 @@ class lscf():
 
             # Z-domain (for discrete-time domain model)
             poles = -np.log(sr) / self.sampling_time
-            f_pole = np.imag(poles)/(2*np.pi)
-            ceta = -np.real(poles) / np.abs(poles)
+            f_pole, ceta = complex_freq_to_freq_and_damp(poles)
+
+            # f_pole = np.imag(poles)/(2*np.pi)
+            # ceta = -np.real(poles) / np.abs(poles)
 
             self.all_poles.append(poles)
             self.pole_freq.append(f_pole)
@@ -324,7 +327,7 @@ class lscf():
             plt.savefig(title)
 
     def identification(self, approx_nat_freq, nat_freq=None, nat_xi=None, pole_ind=None):
-        """Identification of natural frequency and dampling.
+        """Identification of natural frequency and damping.
 
         :param approx_nat_freq: Approximate natural frequency value
         :type approx_nat_freq: list
@@ -433,7 +436,7 @@ def complex_freq_to_freq_and_damp(sr):
     :return: natural frequency and damping
     """
 
-    fr = np.abs(sr)
+    fr = np.sign(np.imag(sr)) * np.abs(sr)
     xir = -sr.real/fr
     fr /= (2 * np.pi)
 
