@@ -126,7 +126,6 @@ class lscf():
         if not pyfrf:
             self.omega = 2 * np.pi * self.freq
             self.sampling_time = 1/(2*self.freq[-1])
-            # self.sampling_time = 1/51200
 
     def add_frf(self, pyfrf_object):
         """Add a FRF at a next location.
@@ -200,9 +199,6 @@ class lscf():
             # Z-domain (for discrete-time domain model)
             poles = -np.log(sr) / self.sampling_time
             f_pole, ceta = complex_freq_to_freq_and_damp(poles)
-
-            # f_pole = np.imag(poles)/(2*np.pi)
-            # ceta = -np.real(poles) / np.abs(poles)
 
             self.all_poles.append(poles)
             self.pole_freq.append(f_pole)
@@ -392,7 +388,7 @@ class lscf():
             A_LSFD = np.zeros([IO, n_poles+2], complex)
             for v in range(IO):
                 A_LSFD[v, :] = np.dot(AT, alpha[v, :])
-        self.A_LSFD = A_LSFD
+        self.A = A_LSFD
         self.poles = poles
 
         # FRF reconstruction
@@ -418,12 +414,12 @@ class lscf():
         """
 
         FRF_true = np.zeros(len(self.omega), complex)
-        for n in range(self.A_LSFD.shape[1]-2):
-            FRF_true += (self.A_LSFD[FRF_ind, n] /
+        for n in range(self.A.shape[1]-2):
+            FRF_true += (self.A[FRF_ind, n] /
                          (1j*self.omega - self.poles[n]))
 
-        FRF_true += -self.A_LSFD[FRF_ind, -2] / \
-            (self.omega**2) + self.A_LSFD[FRF_ind, -1]
+        FRF_true += -self.A[FRF_ind, -2] / \
+            (self.omega**2) + self.A[FRF_ind, -1]
         return FRF_true
 
 
@@ -472,6 +468,7 @@ def redundant_values(omega, xi, prec):
 
     omega_mod = omega[np.argwhere(test < 1)]
     xi_mod = xi[np.argwhere(test < 1)]
+
     return omega_mod, xi_mod
 
 
@@ -583,4 +580,5 @@ def irfft_adjusted_lower_limit(x, low_lim, indices):
     nf = 2 * (x.shape[1] - 1)
     a = (np.fft.irfft(x, n=nf)[:, indices]) * nf
     b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
+
     return a - b
