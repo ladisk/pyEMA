@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import scipy.linalg
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 from scipy.linalg import toeplitz
 
 
@@ -152,11 +152,15 @@ class lscf():
         else:
             self.frf = np.concatenate((self.frf, new_frf.T), axis=0)
         
-    def get_poles(self):
+    def get_poles(self, show_progress=False):
         """Compute poles.
 
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
         """
+        if show_progress:
+            tqdm_range = tqdm
+        else:
+            tqdm_range = lambda x:x
 
         self.all_poles = []
         self.pole_freq = []
@@ -183,7 +187,7 @@ class lscf():
         r = toeplitz(r)
 
         sr_list = []
-        for j in tqdm(range(2, n+1, 2)):
+        for j in tqdm_range(range(2, n+1, 2)):
             d = 0
             for i in range(nr):
                 rinv = np.linalg.inv(r[:j+1, :j+1])
@@ -447,9 +451,6 @@ def redundant_values(omega, xi, prec):
     :param omega: eiqenfrquencies vector
     :param xi: damping ratios vector
     :param prec: absoulute precision in order to distinguish between two values
-
-    @author: Blaz Starc
-    @contact: blaz.starc@fs.uni-lj.si
     """
 
     N = len(omega)
@@ -488,9 +489,6 @@ def stabilisation(sr, nmax, err_fn, err_xi):
     :return xi_temp: updated damping matrix
     :return test_fn: updated eigenfrequencies stabilisation test matrix
     :return test_xi: updated damping stabilisation test matrix
-
-    @author: Blaz Starc
-    @contact: blaz.starc@fs.uni-lj.si
     """
 
     # TODO: check this later for optimisation # this doffers by LSCE and LSCF
