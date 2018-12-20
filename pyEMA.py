@@ -5,6 +5,7 @@ import scipy.linalg
 from tqdm import tqdm
 from scipy.linalg import toeplitz
 
+__version__ = '0.12'
 
 class lscf():
     """
