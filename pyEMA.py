@@ -249,9 +249,9 @@ class lscf():
         fn_temp, xi_temp, test_fn, test_xi = stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
-        fig, ax1 = plt.subplots(figsize=(10, 4))
-        ax1.grid(True)
-        ax2 = ax1.twinx()
+        fig, ax2 = plt.subplots(figsize=(10, 4))
+        ax1 = ax2.twinx()
+        ax1.grid()
         replot(init=True)
 
         ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
@@ -302,6 +302,7 @@ class lscf():
         def onclick(event):
             # če smo pritisnili gumb 2 (srednji na miški)
             if event.button == 2:
+                self.y_data_pole = [event.ydata]
                 self.identification(
                     [event.xdata], self.nat_freq, self.nat_xi, self.pole_ind)
                 replot()
@@ -339,21 +340,28 @@ class lscf():
         :param pole_ind: chosen pole indices, defaults to None
         :param pole_ind: list, optional
         """
-
-        pole_ind = []
-        for i, fr in enumerate(approx_nat_freq):
-            sel = np.argmin(np.abs(self.pole_freq[-1] - fr))
-            pole_ind.append(
-                np.argmin(np.abs(self.pole_freq[-1] - self.pole_freq[-1][sel])))
-
         if nat_freq is None and nat_xi is None:
-            self.nat_freq = self.pole_freq[-1][pole_ind]
-            self.nat_xi = self.pole_xi[-1][pole_ind]
+            y_ind = -1
+            pole_ind = []
+            for i, fr in enumerate(approx_nat_freq):
+                sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
+                pole_ind.append(
+                    [y_ind, np.argmin(np.abs(self.pole_freq[y_ind] - self.pole_freq[y_ind][sel]))])
+            
+            pole_ind = np.asarray(pole_ind)
+            self.nat_freq = self.pole_freq[y_ind][pole_ind[:, 1]]
+            self.nat_xi = self.pole_xi[y_ind][pole_ind[:, 1]]
             self.pole_ind = pole_ind
         else:
-            nat_freq.append(self.pole_freq[-1][pole_ind][0])
-            nat_xi.append(self.pole_xi[-1][pole_ind][0])
-            self.pole_ind.append(pole_ind[0])
+            y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq))-self.y_data_pole)))
+            pole_ind = []
+            for i, fr in enumerate(approx_nat_freq):
+                sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
+                pole_ind.append([y_ind, sel])
+
+            nat_freq.append(self.pole_freq[y_ind][sel])
+            nat_xi.append(self.pole_xi[y_ind][sel])
+            self.pole_ind += pole_ind
             self.nat_freq = nat_freq
             self.nat_xi = nat_xi
 
@@ -366,14 +374,19 @@ class lscf():
                         reconstruct all ('all') or reconstruct None, defaults to None
         :return: modal constants or reconstructed FRF, modal constants
         """
-
+        
         ndim = self.frf.ndim
         if whose_poles == 'own':
-            poles = self.all_poles[-1][self.pole_ind]
-            n_poles = len(self.pole_ind)
+            pole_ind = np.asarray(self.pole_ind, dtype=int)
+            n_poles = pole_ind.shape[0]
+            poles = []
+            for i in range(n_poles):
+                poles.append(self.all_poles[pole_ind[i, 0]][pole_ind[i, 1]])
+            poles = np.asarray(poles)
         else:
-            poles = whose_poles.all_poles[-1][whose_poles.pole_ind]
-            n_poles = len(whose_poles.pole_ind)
+            pole_ind = np.asarray(whose_poles.pole_ind)
+            poles = whose_poles.all_poles[-1][pole_ind]
+            n_poles = len(pole_ind)
 
         w = np.append(-self.omega[1:][::-1], self.omega[1:])
         alpha = np.append(self.frf[:, 1:].conjugate()[
