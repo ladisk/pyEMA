@@ -268,13 +268,13 @@ class lscf():
             ax1.set_xlim([self.lower, self.upper])
 
         # stable eigenfrequencues, unstable damping ratios
-        a = np.argwhere((test_fn > 0) & (test_xi == 0))
+        a = np.argwhere((test_fn > 0) & ((test_xi == 0) | (xi_temp <= 0)))
         # stable eigenfrequencies, stable damping ratios
-        b = np.argwhere((test_fn > 0) & (test_xi > 0))
+        b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0)))
         # unstable eigenfrequencues, unstable damping ratios
-        c = np.argwhere((test_fn == 0) & (test_xi == 0))
+        c = np.argwhere((test_fn == 0) & ((test_xi == 0) | (xi_temp <= 0)))
         # unstable eigenfrequencues, stable damping ratios
-        d = np.argwhere((test_fn == 0) & (test_xi > 0))
+        d = np.argwhere((test_fn == 0) & ((test_xi > 0) & (xi_temp > 0)))
 
         p1 = ax1.plot(fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx',
                       markersize=3, label="stable frequency, unstable damping")
