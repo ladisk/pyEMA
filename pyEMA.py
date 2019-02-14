@@ -14,7 +14,8 @@ class lscf():
 
     def __init__(self, 
         frf=None, 
-        freq=None, 
+        freq=None,
+        dt=None,
         lower=50, 
         upper=10000, 
         pol_order_high=100, 
@@ -126,7 +127,10 @@ class lscf():
 
         if not pyfrf:
             self.omega = 2 * np.pi * self.freq
-            self.sampling_time = 1/(2*self.freq[-1])
+            if dt is None:
+                self.sampling_time = 1/(2*self.freq[-1])
+            else:
+                self.sampling_time = dt
 
     def add_frf(self, pyfrf_object):
         """Add a FRF at a next location.
