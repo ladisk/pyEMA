@@ -5,6 +5,10 @@ import scipy.linalg
 from tqdm import tqdm
 from scipy.linalg import toeplitz
 
+import tkinter as tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+
 __version__ = '0.15'
 
 class lscf():
@@ -246,20 +250,25 @@ class lscf():
                 ax2.semilogy(self.freq, np.average(
                     np.abs(self.H), axis=0), color='r', lw=2)
 
-            plt.xlim([self.lower, self.upper])
+            ax1.set_xlim([self.lower, self.upper])
             ax1.set_ylim([0, self.pol_order_high+5])
 
         Nmax = self.pol_order_high
         fn_temp, xi_temp, test_fn, test_xi = stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
-        fig, ax2 = plt.subplots(figsize=(10, 4))
+
+        root = tk.Tk() # Tkinter
+        root.title('Stability Chart') # Tkinter
+        fig = Figure(figsize=(20, 8)) # Tkinter
+        ax2 = fig.add_subplot(111) # Tkinter
+
         ax1 = ax2.twinx()
-        ax1.grid()
+        ax1.grid(True)
         replot(init=True)
 
         ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
-        ax1.set_ylabel(r'Polynom order', fontsize=12)
+        ax1.set_ylabel(r'Polynomial order', fontsize=12)
         ax2.set_ylabel(r'$|\alpha|$', fontsize=12)
 
         if latex_render is True:
@@ -268,7 +277,7 @@ class lscf():
             ax1.tick_params(axis='both', which='major', labelsize=12)
             ax2.tick_params(axis='both', which='major', labelsize=12)
             ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
-            ax1.set_ylabel(r'Red polinoma', fontsize=12)
+            ax1.set_ylabel(r'Polynomial order', fontsize=12)
             ax2.set_ylabel(r'$|\alpha|_{log}$', fontsize=12)
             ax1.set_xlim([self.lower, self.upper])
 
@@ -282,17 +291,16 @@ class lscf():
         d = np.argwhere((test_fn == 0) & ((test_xi > 0) & (xi_temp > 0)))
 
         p1 = ax1.plot(fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx',
-                      markersize=3, label="stable frequency, unstable damping")
+                      markersize=4, label="stable frequency, unstable damping")
         p2 = ax1.plot(fn_temp[b[:, 0], b[:, 1]], 1+b[:, 1], 'gx',
-                      markersize=5, label="stable frequency, stable damping")
+                      markersize=7, label="stable frequency, stable damping")
         p3 = ax1.plot(fn_temp[c[:, 0], c[:, 1]], 1+c[:, 1], 'r.',
-                      markersize=3, label="unstable frequency, unstable damping")
+                      markersize=4, label="unstable frequency, unstable damping")
         p4 = ax1.plot(fn_temp[d[:, 0], d[:, 1]], 1+d[:, 1], 'r*',
-                      markersize=3, label="unstable frequency, stable damping")
+                      markersize=4, label="unstable frequency, stable damping")
 
         if legend:
-            ax1.legend(loc='upper center', bbox_to_anchor=(
-                0.5, 1.25), ncol=2, frameon=True)
+            ax1.legend(loc='upper center', ncol=2, frameon=True)
         plt.tight_layout()
 
         print('To pick a pole press the MIDDLE mouse button.\nTo erase the last pick click the RIGHT mouse button.')
@@ -303,8 +311,11 @@ class lscf():
         line, = ax1.plot(self.nat_freq, np.repeat(
             self.pol_order_high, len(self.nat_freq)), 'kv', markersize=8)
 
+        # Mark selected poles
+        selected, = ax1.plot([],[], 'ko')
+
         def onclick(event):
-            # če smo pritisnili gumb 2 (srednji na miški)
+            # on button 2 press (middle mouse button)
             if event.button == 2:
                 self.y_data_pole = [event.ydata]
                 self.identification(
@@ -315,7 +326,7 @@ class lscf():
 
             elif event.button == 3:
                 try:
-                    del self.nat_freq[-1]  # izbrišemo zadnjo točko
+                    del self.nat_freq[-1]  # delete last point
                     del self.nat_xi[-1]
                     del self.pole_ind[-1]
                     replot()
@@ -323,14 +334,23 @@ class lscf():
                 except:
                     pass
 
-            line.set_xdata(np.asarray(self.nat_freq))  # posodobimo podatke
+            line.set_xdata(np.asarray(self.nat_freq))  # update data
             line.set_ydata(np.repeat(Nmax*1.04, len(self.nat_freq)))
+
+            selected.set_xdata([self.pole_freq[p[0]][p[1]] for p in self.pole_ind])  # update data
+            selected.set_ydata([p[0] for p in self.pole_ind])
             fig.canvas.draw()
+
+        canvas = FigureCanvasTkAgg(fig, root) # Tkinter
+        canvas.get_tk_widget().pack(side='top', fill='both', expand=1) # Tkinter
+        NavigationToolbar2Tk(canvas, root) # Tkinter
 
         cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
         if title is not None:
             plt.savefig(title)
+
+        root.mainloop() # Tkinter
 
     def identification(self, approx_nat_freq, nat_freq=None, nat_xi=None, pole_ind=None):
         """Identification of natural frequency and damping.
@@ -357,6 +377,7 @@ class lscf():
             self.nat_xi = self.pole_xi[y_ind][pole_ind[:, 1]]
             self.pole_ind = pole_ind
         else:
+            # On-the-fly
             y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq))-self.y_data_pole)))
             pole_ind = []
             for i, fr in enumerate(approx_nat_freq):
