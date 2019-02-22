@@ -399,19 +399,17 @@ class lscf():
                         reconstruct all ('all') or reconstruct None, defaults to None
         :return: modal constants or reconstructed FRF, modal constants
         """
-        
         ndim = self.frf.ndim
         if whose_poles == 'own':
-            pole_ind = np.asarray(self.pole_ind, dtype=int)
-            n_poles = pole_ind.shape[0]
-            poles = []
-            for i in range(n_poles):
-                poles.append(self.all_poles[pole_ind[i, 0]][pole_ind[i, 1]])
-            poles = np.asarray(poles)
-        else:
-            pole_ind = np.asarray(whose_poles.pole_ind)
-            poles = whose_poles.all_poles[-1][pole_ind]
-            n_poles = len(pole_ind)
+            whose_poles = self
+
+        pole_ind = np.asarray(whose_poles.pole_ind, dtype=int)
+        n_poles = pole_ind.shape[0]
+        poles = []
+        for i in range(n_poles):
+            poles.append(whose_poles.all_poles[pole_ind[i, 0]][pole_ind[i, 1]])
+        poles = np.asarray(poles)
+
 
         w = np.append(-self.omega[1:][::-1], self.omega[1:])
         alpha = np.append(self.frf[:, 1:].conjugate()[
