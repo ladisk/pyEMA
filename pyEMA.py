@@ -9,7 +9,7 @@ import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
-__version__ = '0.16'
+__version__ = '0.17'
 
 class lscf():
     """
