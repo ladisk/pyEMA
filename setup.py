@@ -10,7 +10,7 @@ For the showcase see: https://github.com/ladisk/pyEMA/blob/master/pyEMA%20Showca
 
 from setuptools import setup
 setup(name='pyEMA',
-      version='0.16',
+      version='0.17',
       author='Klemen Zaletelj, Tomaž Bregar, Domen Gorjup, Janko Slavič',
       author_email='janko.slavic@fs.uni-lj.si, ladisk@gmail.com',
       description='Experimental and operational modal analysis.',
