@@ -303,7 +303,7 @@ class lscf():
             ax1.legend(loc='upper center', ncol=2, frameon=True)
         plt.tight_layout()
 
-        print('To pick a pole press the MIDDLE mouse button.\nTo erase the last pick click the RIGHT mouse button.')
+        print('To pick a pole press the RIGHT mouse button.\nTo erase the last pick click the MIDDLE mouse button.')
         self.nat_freq = []
         self.nat_xi = []
         self.pole_ind = []
@@ -315,8 +315,8 @@ class lscf():
         selected, = ax1.plot([],[], 'ko')
 
         def onclick(event):
-            # on button 2 press (middle mouse button)
-            if event.button == 2:
+            # on button 3 press (right mouse button)
+            if event.button == 3:
                 self.y_data_pole = [event.ydata]
                 self.x_data_pole = event.xdata
                 self._select_closest_poles_on_the_fly()
@@ -325,7 +325,7 @@ class lscf():
                 
                 print(f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
 
-            elif event.button == 3:
+            elif event.button == 2:
                 try:
                     del self.nat_freq[-1]  # delete last point
                     del self.nat_xi[-1]
