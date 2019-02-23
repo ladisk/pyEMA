@@ -234,7 +234,7 @@ class lscf():
 
         2.
         >>> approx_nat_freq = [234, 545]
-        >>> a.identification(approx_nat_freq)
+        >>> a.find_closest_poles(approx_nat_freq)
         >>> a.nat_freq # natural frequencies
         >>> a.nat_xi # damping coefficients
         >>> H, A = a.lsfd(whose_poles='own', FRF_ind='all) # reconstruction
@@ -318,11 +318,12 @@ class lscf():
             # on button 2 press (middle mouse button)
             if event.button == 2:
                 self.y_data_pole = [event.ydata]
-                self.identification(
-                    [event.xdata], self.nat_freq, self.nat_xi, self.pole_ind)
+                self.x_data_pole = event.xdata
+                self._select_closest_poles_on_the_fly()
+
                 replot()
-                print(
-                    f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
+                
+                print(f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
 
             elif event.button == 3:
                 try:
@@ -352,43 +353,36 @@ class lscf():
 
         root.mainloop() # Tkinter
 
-    def identification(self, approx_nat_freq, nat_freq=None, nat_xi=None, pole_ind=None):
+    def _select_closest_poles_on_the_fly(self):
+        """On-the-fly selection of the closest poles.        
+        """
+        y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq))-self.y_data_pole))) # Find closest pole order
+        sel = np.argmin(np.abs(self.pole_freq[y_ind] - self.x_data_pole)) # Find cloeset frequency
+        
+        self.pole_ind.append([y_ind, sel])
+        self.nat_freq.append(self.pole_freq[y_ind][sel])
+        self.nat_xi.append(self.pole_xi[y_ind][sel])
+
+    def select_closest_poles(self, approx_nat_freq):
         """Identification of natural frequency and damping.
+
+        If `approx_nat_freq` is used, the method finds closest poles of of the polynomial with
+        the highest order.
 
         :param approx_nat_freq: Approximate natural frequency value
         :type approx_nat_freq: list
-        :param nat_freq: avaliable natural frequencies, defaults to None
-        :param nat_freq: list, optional
-        :param nat_xi: avaliable damping coeffitients, defaults to None
-        :param nat_xi: list, optional
-        :param pole_ind: chosen pole indices, defaults to None
-        :param pole_ind: list, optional
         """
-        if nat_freq is None and nat_xi is None:
-            y_ind = -1
-            pole_ind = []
-            for i, fr in enumerate(approx_nat_freq):
-                sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
-                pole_ind.append(
-                    [y_ind, np.argmin(np.abs(self.pole_freq[y_ind] - self.pole_freq[y_ind][sel]))])
-            
-            pole_ind = np.asarray(pole_ind)
-            self.nat_freq = self.pole_freq[y_ind][pole_ind[:, 1]]
-            self.nat_xi = self.pole_xi[y_ind][pole_ind[:, 1]]
-            self.pole_ind = pole_ind
-        else:
-            # On-the-fly
-            y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq))-self.y_data_pole)))
-            pole_ind = []
-            for i, fr in enumerate(approx_nat_freq):
-                sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
-                pole_ind.append([y_ind, sel])
-
-            nat_freq.append(self.pole_freq[y_ind][sel])
-            nat_xi.append(self.pole_xi[y_ind][sel])
-            self.pole_ind += pole_ind
-            self.nat_freq = nat_freq
-            self.nat_xi = nat_xi
+        y_ind = -1
+        pole_ind = []
+        for i, fr in enumerate(approx_nat_freq):
+            sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
+            pole_ind.append(
+                [y_ind, np.argmin(np.abs(self.pole_freq[y_ind] - self.pole_freq[y_ind][sel]))])
+        
+        pole_ind = np.asarray(pole_ind)
+        self.nat_freq = self.pole_freq[y_ind][pole_ind[:, 1]]
+        self.nat_xi = self.pole_xi[y_ind][pole_ind[:, 1]]
+        self.pole_ind = pole_ind          
 
     def lsfd(self, whose_poles='own', FRF_ind=None):
         """
