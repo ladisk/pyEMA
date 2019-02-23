@@ -463,6 +463,13 @@ class lscf():
             (self.omega**2) + self.A[FRF_ind, -1]
         return FRF_true
 
+    def print_modal_data(self):
+        """Show modal data in a table-like structure."""
+        print('   Nat. f.      Damping')
+        print(23*'-')
+        for i, f in enumerate(self.nat_freq):
+            print(f'{i+1}) {f:6.1f}\t{self.nat_xi[i]:5.4f}')
+
 
 def complex_freq_to_freq_and_damp(sr):
     """
