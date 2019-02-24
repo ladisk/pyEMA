@@ -303,7 +303,7 @@ class lscf():
             ax1.legend(loc='upper center', ncol=2, frameon=True)
         plt.tight_layout()
 
-        print('To pick a pole press the RIGHT mouse button.\nTo erase the last pick click the MIDDLE mouse button.')
+        print('SHIFT + LEFT mouse button to pick a pole.\nRIGHT mouse button to erase the last pick.')
         self.nat_freq = []
         self.nat_xi = []
         self.pole_ind = []
@@ -314,18 +314,30 @@ class lscf():
         # Mark selected poles
         selected, = ax1.plot([],[], 'ko')
 
+        self.shift_is_held = False
+        def on_key_press(event):
+            """Function triggered on key press (shift)."""
+            if event.key == 'shift':
+                self.shift_is_held = True
+        
+        def on_key_release(event):
+            """Function triggered on key release (shift)."""
+            if event.key == 'shift':
+                self.shift_is_held = False
+
         def onclick(event):
-            # on button 3 press (right mouse button)
-            if event.button == 3:
+            # on button 1 press (left mouse button) + shift is held
+            if event.button == 1 and self.shift_is_held:
                 self.y_data_pole = [event.ydata]
                 self.x_data_pole = event.xdata
                 self._select_closest_poles_on_the_fly()
 
                 replot()
                 
-                print(f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} --> {self.nat_freq[-1]} Hz')
+                print(f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} -->\t{self.nat_freq[-1]} Hz\t(xi = {self.nat_xi[-1]:.4f})')
 
-            elif event.button == 2:
+            # On button 3 press (left mouse button)
+            elif event.button == 3 and self.shift_is_held:
                 try:
                     del self.nat_freq[-1]  # delete last point
                     del self.nat_xi[-1]
@@ -345,8 +357,11 @@ class lscf():
         canvas = FigureCanvasTkAgg(fig, root) # Tkinter
         canvas.get_tk_widget().pack(side='top', fill='both', expand=1) # Tkinter
         NavigationToolbar2Tk(canvas, root) # Tkinter
-
-        cid = fig.canvas.mpl_connect('button_press_event', onclick)
+        
+        # Connecting functions to event manager
+        fig.canvas.mpl_connect('key_press_event', on_key_press)
+        fig.canvas.mpl_connect('key_release_event', on_key_release)
+        fig.canvas.mpl_connect('button_press_event', onclick)
 
         if title is not None:
             plt.savefig(title)
