@@ -466,7 +466,9 @@ class lscf():
         FRF_true = np.zeros(len(self.omega), complex)
         for n in range(self.A.shape[1]-2):
             FRF_true += (self.A[FRF_ind, n] /
-                         (1j*self.omega - self.poles[n]))
+                         (1j*self.omega - self.poles[n])) + \
+                         (np.conjugate(self.A[FRF_ind, n]) /
+                         (1j*self.omega - np.conjugate(self.poles[n])))
 
         FRF_true += -self.A[FRF_ind, -2] / \
             (self.omega**2) + self.A[FRF_ind, -1]
