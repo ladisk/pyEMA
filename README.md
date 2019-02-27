@@ -57,4 +57,4 @@ There are two types of reconstruction possible:
     H, A = c.lsfd(whose_poles=a, FRF_ind='all')
     ```
 
-[![Build Status](https://travis-ci.com/ladisk/pyema.svg?branch=master)](https://travis-ci.com/ladisk/pyema)
+[![Build Status](https://travis-ci.com/ladisk/pyEMA.svg?branch=master)](https://travis-ci.com/ladisk/pyEMA)
