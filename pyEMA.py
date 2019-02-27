@@ -217,7 +217,7 @@ class lscf():
             self.pole_freq.append(f_pole)
             self.pole_xi.append(ceta)
 
-    def stab_chart(self, poles, fn_temp=0.001, xi_temp=0.05, legend=False, latex_render=False, title=None):
+    def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=False, latex_render=False, title=None):
         """Render stability chart.
 
         Interactive pole selection is possible. Identification of natural 
@@ -234,11 +234,14 @@ class lscf():
 
         2.
         >>> approx_nat_freq = [234, 545]
-        >>> a.find_closest_poles(approx_nat_freq)
+        >>> a.select_closest_poles(approx_nat_freq)
         >>> a.nat_freq # natural frequencies
         >>> a.nat_xi # damping coefficients
         >>> H, A = a.lsfd(whose_poles='own', FRF_ind='all) # reconstruction
         """
+        if poles == 'all':
+            poles = self.all_poles
+
         def replot(init=False):
             """Replot the measured and reconstructed FRF based on new selected poles."""
             ax2.clear()
