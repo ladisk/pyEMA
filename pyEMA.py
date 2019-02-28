@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import scipy.linalg
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 from scipy.linalg import toeplitz
 
 import tkinter as tk
