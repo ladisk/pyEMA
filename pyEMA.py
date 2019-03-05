@@ -9,6 +9,9 @@ import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
+import warnings
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+
 __version__ = '0.18'
 
 class lscf():
@@ -210,7 +213,9 @@ class lscf():
             sr = np.roots(np.append(a0an1, 1)[::-1])
 
             # Z-domain (for discrete-time domain model)
-            poles = -np.log(sr) / self.sampling_time
+            _poles = -np.log(sr) / self.sampling_time
+            poles = poles_correction(_poles, self.freq[1]-self.freq[0])
+
             f_pole, ceta = complex_freq_to_freq_and_damp(poles)
 
             self.all_poles.append(poles)
@@ -638,3 +643,21 @@ def irfft_adjusted_lower_limit(x, low_lim, indices):
     b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
 
     return a - b
+
+def poles_correction(poles, df):
+    """Shifting the poles for df.
+    
+    :param pole: poles for current polynomial order
+    :type pole: array
+    :param df: frequency step
+    :type df: float
+    :return: corrected pole array
+    :rtype: array
+    """
+
+    a = np.real(poles)
+    b = np.imag(poles)
+    ak = (2*a*df*np.pi)/(np.sqrt(a**2+b**2))
+    bk = (-b+np.sign(b)*np.sqrt((b**2*(a**2+b**2+4*df *
+                                       np.pi*(np.sqrt(a**2+b**2)+df*np.pi)))/(a**2+b**2)))
+    return (a+ak+(b+bk)*1.j)
