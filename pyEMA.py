@@ -222,7 +222,7 @@ class lscf():
             self.pole_freq.append(f_pole)
             self.pole_xi.append(ceta)
 
-    def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=False, latex_render=False, title=None):
+    def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=True, latex_render=False, title=None):
         """Render stability chart.
 
         Interactive pole selection is possible. Identification of natural 
@@ -524,11 +524,8 @@ def redundant_values(omega, xi, prec):
                 test_omega[i, j] = 1
             else:
                 test_omega[i, j] = 0
-
-    test = np.zeros(N, dtype='int')
-
-    for i in range(0, N):
-        test[i] = np.sum(test_omega[i, :])
+   
+    test = np.sum(test_omega, axis=0)
 
     omega_mod = omega[np.argwhere(test < 1)]
     xi_mod = xi[np.argwhere(test < 1)]
@@ -553,14 +550,14 @@ def stabilisation(sr, nmax, err_fn, err_xi):
     :return test_fn: updated eigenfrequencies stabilisation test matrix
     :return test_xi: updated damping stabilisation test matrix
     """
-
+    
     # TODO: check this later for optimisation # this doffers by LSCE and LSCF
     fn_temp = np.zeros((2*nmax, nmax), dtype='double')
     xi_temp = np.zeros((2*nmax, nmax), dtype='double')
     test_fn = np.zeros((2*nmax, nmax), dtype='int')
     test_xi = np.zeros((2*nmax, nmax), dtype='int')
 
-    for nr, n in enumerate(range(nmax)):
+    for nr, n in enumerate(tqdm(range(nmax))):
         fn, xi = complex_freq_to_freq_and_damp(sr[nr])
         # elimination of conjugate values in
         fn, xi = redundant_values(fn, xi, 1e-3)
@@ -576,49 +573,18 @@ def stabilisation(sr, nmax, err_fn, err_xi):
             # --> 1, the data is within relative tolerance err_fn
             # --> 0, the data is outside the relative tolerance err_fn
             fn_test = np.zeros((len(fn), len(fn_temp[:, n - 1])), dtype='int')
-            for i in range(0, len(fn)):
-                for j in range(0, len(fn_temp[0:2*(n), n-1])):
-                    if fn_temp[j, n-2] == 0:
-                        fn_test[i, j] = 0
-                    else:
-                        if np.abs((fn[i] - fn_temp[j, n-2])/fn_temp[j, n-2]) < err_fn:
-                            fn_test[i, j] = 1
-                        else:
-                            fn_test[i, j] = 0
-
-            for i in range(0, len(fn)):
-                # all rows are summed together
-                test_fn[i, n - 1] = np.sum(fn_test[i, :])
-
-            # The same procedure as for eigenfrequencies is applied for damping
             xi_test = np.zeros((len(xi), len(xi_temp[:, n - 1])), dtype='int')
-            for i in range(0, len(xi)):
-                for j in range(0, len(xi_temp[0:2*(n), n-1])):
-                    if xi_temp[j, n-2] == 0:
-                        xi_test[i, j] = 0
-                    else:
-                        if np.abs((xi[i] - xi_temp[j, n-2])/xi_temp[j, n-2]) < err_xi:
-                            xi_test[i, j] = 1
-                        else:
-                            xi_test[i, j] = 0
-            for i in range(0, len(xi)):
-                test_xi[i, n - 1] = np.sum(xi_test[i, :])
 
-            # If the frequency/damping values corresponded to the previous iteration,
-            # a mean of the two values is computed, otherwise the value stays the same
-            for i in range(0, len(fn)):
-                for j in range(0, len(fn_temp[0:2*(n), n-1])):
-                    if fn_test[i, j] == 1:
-                        fn_temp[i, n - 1] = (fn[i] + fn_temp[j, n - 2]) / 2
-                    elif fn_test[i, j] == 0:
-                        fn_temp[i, n - 1] = fn[i]
-            for i in range(0, len(fn)):
-                for j in range(0, len(fn_temp[0:2*(n), n-1])):
-                    if xi_test[i, j] == 1:
-                        xi_temp[i, n - 1] = (xi[i] + xi_temp[j, n - 2]) / 2
-                    elif xi_test[i, j] == 0:
-                        xi_temp[i, n - 1] = xi[i]
+            for i in range(len(fn)):
+                fn_test[i, np.abs((fn[i] - fn_temp[:, n-2])/fn_temp[:, n-2]) < err_fn] = 1
+                xi_test[i, np.abs((xi[i] - xi_temp[:, n-2])/xi_temp[:, n-2]) < err_xi] = 1
 
+                fn_temp[i, n - 1] = fn[i]
+                xi_temp[i, n - 1] = xi[i]
+
+                test_fn[i, n-1] = np.sum(fn_test[i, :2*n])
+                test_xi[i, n-1] = np.sum(xi_test[i, :2*n])
+                        
     return fn_temp, xi_temp, test_fn, test_xi
 
 
