@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import scipy.linalg
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
 from scipy.linalg import toeplitz
 
 import tkinter as tk
@@ -170,7 +170,7 @@ class lscf():
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
         """
         if show_progress:
-            tqdm_range = tqdm
+            tqdm_range = lambda x: tqdm(x, ncols=100)
         else:
             tqdm_range = lambda x:x
 
@@ -557,7 +557,7 @@ def stabilisation(sr, nmax, err_fn, err_xi):
     test_fn = np.zeros((2*nmax, nmax), dtype='int')
     test_xi = np.zeros((2*nmax, nmax), dtype='int')
 
-    for nr, n in enumerate(tqdm(range(nmax))):
+    for nr, n in enumerate(tqdm(range(nmax), ncols=100)):
         fn, xi = complex_freq_to_freq_and_damp(sr[nr])
         # elimination of conjugate values in
         fn, xi = redundant_values(fn, xi, 1e-3)
