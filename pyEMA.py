@@ -91,6 +91,20 @@ class lscf():
         :param pol_order_high: Highest order of the polynomial
         :type pol_order_high: int
         """
+        try:
+            self.lower = float(lower)
+        except:
+            raise Exception('lower must be float or integer')
+        if self.lower < 0:
+            raise Exception('lower must be positive or equal to zero')
+
+        try:
+            self.upper = float(upper)
+        except:
+            raise Exception('upper must be flaot or integer')
+        if self.upper < self.lower:
+            raise Exception('upper must be greater than lower')
+
         if pyfrf:
             self.frf = 0
         elif not pyfrf and frf is not None and freq is not None:
@@ -108,22 +122,13 @@ class lscf():
             if self.freq.ndim != 1:
                 raise Exception(
                     f'ndim of freq is not equal to 1 ({self.freq.ndim})')
+
+            # Cut off the frequencies above 'upper' argument
+            cutoff_ind = np.argmin(np.abs(self.freq - self.upper))
+            self.frf = self.frf[:, :cutoff_ind]
+            self.freq = self.freq[:cutoff_ind]
         else:
             raise Exception('input arguments are not defined')
-
-        try:
-            self.lower = float(lower)
-        except:
-            raise Exception('lower must be float or integer')
-        if self.lower < 0:
-            raise Exception('lower must be positive or equal to zero')
-
-        try:
-            self.upper = float(upper)
-        except:
-            raise Exception('upper must be flaot or integer')
-        if self.upper < self.lower:
-            raise Exception('upper must be greater than lower')
 
         try:
             self.pol_order_high = int(pol_order_high)
