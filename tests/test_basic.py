@@ -18,14 +18,14 @@ def test_1():
     
     n_freq = [176., 476.]
     acc.select_closest_poles(n_freq)
-    np.testing.assert_almost_equal(acc.nat_freq[0], 177.0476572, decimal=5)
-    np.testing.assert_almost_equal(acc.nat_freq[1], 477.4667040, decimal=5)
+    np.testing.assert_almost_equal(acc.nat_freq[0], 177.14365808072122, decimal=5)
+    np.testing.assert_almost_equal(acc.nat_freq[1], 477.65281913942687, decimal=5)
     
     H, A = acc.lsfd(whose_poles='own', FRF_ind='all')
     assert A.shape[0]==6
     assert A.shape[1]==4
     assert H.shape[0]==6
-    assert H.shape[1]==9999
+    assert H.shape[1]==999
 
 
 
