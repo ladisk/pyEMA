@@ -218,8 +218,8 @@ class lscf():
             sr = np.roots(np.append(a0an1, 1)[::-1])
 
             # Z-domain (for discrete-time domain model)
-            _poles = -np.log(sr) / self.sampling_time
-            poles = poles_correction(_poles, self.freq[1]-self.freq[0])
+            poles = -np.log(sr) / self.sampling_time
+            # poles = poles_correction(_poles, self.freq[1]-self.freq[0])
 
             f_pole, ceta = complex_freq_to_freq_and_damp(poles)
 
@@ -371,14 +371,17 @@ class lscf():
         canvas.get_tk_widget().pack(side='top', fill='both', expand=1) # Tkinter
         NavigationToolbar2Tk(canvas, root) # Tkinter
         
+        def on_closing():
+            if title is not None:
+                fig.savefig(title)
+            root.destroy()
+
         # Connecting functions to event manager
         fig.canvas.mpl_connect('key_press_event', on_key_press)
         fig.canvas.mpl_connect('key_release_event', on_key_release)
         fig.canvas.mpl_connect('button_press_event', onclick)
 
-        if title is not None:
-            plt.savefig(title)
-
+        root.protocol("WM_DELETE_WINDOW", on_closing)
         root.mainloop() # Tkinter
 
     def _select_closest_poles_on_the_fly(self):
