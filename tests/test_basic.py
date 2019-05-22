@@ -8,7 +8,7 @@ import pyEMA
 
   
 def test_1():
-    freq, H1_main = np.load("./data/acc_data.npy")
+    freq, H1_main = np.load("./data/acc_data.npy", allow_pickle=True)
     FRF = H1_main[:,1,:]
     freq = freq
     acc = pyEMA.lscf(frf=FRF, freq=freq, lower=10, 

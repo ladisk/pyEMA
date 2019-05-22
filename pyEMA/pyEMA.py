@@ -12,6 +12,8 @@ from matplotlib.figure import Figure
 import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
+from .tools import *
+
 __version__ = '0.18'
 
 class lscf():

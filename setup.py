@@ -15,7 +15,7 @@ setup(name='pyEMA',
       author_email='janko.slavic@fs.uni-lj.si, ladisk@gmail.com',
       description='Experimental and operational modal analysis.',
       url='https://github.com/ladisk/pyEMA',
-      py_modules=['pyEMA'],
+      packages=['pyEMA'],
       long_description=desc,
       install_requires=['numpy>=1.15.4', 'tqdm', 'scipy>=1.1.0', 'matplotlib>=3.0.0']
       )
