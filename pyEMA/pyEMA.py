@@ -16,19 +16,20 @@ from .tools import *
 
 __version__ = '0.18'
 
+
 class lscf():
     """
     Least-Squares Complex Frequency-domain estimate.
     """
 
-    def __init__(self, 
-        frf=None, 
-        freq=None,
-        dt=None,
-        lower=50, 
-        upper=10000, 
-        pol_order_high=100, 
-        pyfrf=False):
+    def __init__(self,
+                 frf=None,
+                 freq=None,
+                 dt=None,
+                 lower=50,
+                 upper=10000,
+                 pol_order_high=100,
+                 pyfrf=False):
         """The LSCF method is an frequency-domain Linear Least Squares
         estimator optimized  for modal parameter estimation. The choice of
         the most important algorithm characteristics is based on the
@@ -153,7 +154,7 @@ class lscf():
 
         >>> for file in files:
         >>>     lvm_data = lvm
-        
+
         :param pyfrf_object: FRF object from pyFRF
         :type pyfrf_object: object
         """
@@ -170,16 +171,16 @@ class lscf():
             self.frf = new_frf.T
         else:
             self.frf = np.concatenate((self.frf, new_frf.T), axis=0)
-        
+
     def get_poles(self, show_progress=False):
         """Compute poles.
 
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
         """
         if show_progress:
-            tqdm_range = lambda x: tqdm(x, ncols=100)
+            def tqdm_range(x): return tqdm(x, ncols=100)
         else:
-            tqdm_range = lambda x:x
+            def tqdm_range(x): return x
 
         self.all_poles = []
         self.pole_freq = []
@@ -223,10 +224,10 @@ class lscf():
             # Z-domain (for discrete-time domain model)
             poles = -np.log(sr) / self.sampling_time
             # poles = poles_correction(_poles, self.freq[1]-self.freq[0])
-            
+
             _t = companion(np.append(a0an1, 1)[::-1])
-            _v,_w = np.linalg.eig(_t)
-            self.partfactors.append(_w[-1,:])
+            _v, _w = np.linalg.eig(_t)
+            self.partfactors.append(_w[-1, :])
 
             f_pole, ceta = complex_freq_to_freq_and_damp(poles)
 
@@ -277,11 +278,10 @@ class lscf():
         fn_temp, xi_temp, test_fn, test_xi = stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
-
-        root = tk.Tk() # Tkinter
-        root.title('Stability Chart') # Tkinter
-        fig = Figure(figsize=(20, 8)) # Tkinter
-        ax2 = fig.add_subplot(111) # Tkinter
+        root = tk.Tk()  # Tkinter
+        root.title('Stability Chart')  # Tkinter
+        fig = Figure(figsize=(20, 8))  # Tkinter
+        ax2 = fig.add_subplot(111)  # Tkinter
 
         ax1 = ax2.twinx()
         ax1.grid(True)
@@ -332,14 +332,15 @@ class lscf():
             self.pol_order_high, len(self.nat_freq)), 'kv', markersize=8)
 
         # Mark selected poles
-        selected, = ax1.plot([],[], 'ko')
+        selected, = ax1.plot([], [], 'ko')
 
         self.shift_is_held = False
+
         def on_key_press(event):
             """Function triggered on key press (shift)."""
             if event.key == 'shift':
                 self.shift_is_held = True
-        
+
         def on_key_release(event):
             """Function triggered on key release (shift)."""
             if event.key == 'shift':
@@ -353,8 +354,9 @@ class lscf():
                 self._select_closest_poles_on_the_fly()
 
                 replot()
-                
-                print(f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} -->\t{self.nat_freq[-1]} Hz\t(xi = {self.nat_xi[-1]:.4f})')
+
+                print(
+                    f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} -->\t{self.nat_freq[-1]} Hz\t(xi = {self.nat_xi[-1]:.4f})')
 
             # On button 3 press (left mouse button)
             elif event.button == 3 and self.shift_is_held:
@@ -370,14 +372,15 @@ class lscf():
             line.set_xdata(np.asarray(self.nat_freq))  # update data
             line.set_ydata(np.repeat(Nmax*1.04, len(self.nat_freq)))
 
-            selected.set_xdata([self.pole_freq[p[0]][p[1]] for p in self.pole_ind])  # update data
+            selected.set_xdata([self.pole_freq[p[0]][p[1]]
+                                for p in self.pole_ind])  # update data
             selected.set_ydata([p[0] for p in self.pole_ind])
             fig.canvas.draw()
 
-        canvas = FigureCanvasTkAgg(fig, root) # Tkinter
-        canvas.get_tk_widget().pack(side='top', fill='both', expand=1) # Tkinter
-        NavigationToolbar2Tk(canvas, root) # Tkinter
-        
+        canvas = FigureCanvasTkAgg(fig, root)  # Tkinter
+        canvas.get_tk_widget().pack(side='top', fill='both', expand=1)  # Tkinter
+        NavigationToolbar2Tk(canvas, root)  # Tkinter
+
         def on_closing():
             if title is not None:
                 fig.savefig(title)
@@ -389,14 +392,16 @@ class lscf():
         fig.canvas.mpl_connect('button_press_event', onclick)
 
         root.protocol("WM_DELETE_WINDOW", on_closing)
-        root.mainloop() # Tkinter
+        root.mainloop()  # Tkinter
 
     def _select_closest_poles_on_the_fly(self):
         """On-the-fly selection of the closest poles.        
         """
-        y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq))-self.y_data_pole))) # Find closest pole order
-        sel = np.argmin(np.abs(self.pole_freq[y_ind] - self.x_data_pole)) # Find cloeset frequency
-        
+        y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq)
+                                               )-self.y_data_pole)))  # Find closest pole order
+        # Find cloeset frequency
+        sel = np.argmin(np.abs(self.pole_freq[y_ind] - self.x_data_pole))
+
         self.pole_ind.append([y_ind, sel])
         self.nat_freq.append(self.pole_freq[y_ind][sel])
         self.nat_xi.append(self.pole_xi[y_ind][sel])
@@ -416,22 +421,30 @@ class lscf():
             sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
             pole_ind.append(
                 [y_ind, np.argmin(np.abs(self.pole_freq[y_ind] - self.pole_freq[y_ind][sel]))])
-        
+
         pole_ind = np.asarray(pole_ind)
         self.nat_freq = self.pole_freq[y_ind][pole_ind[:, 1]]
         self.nat_xi = self.pole_xi[y_ind][pole_ind[:, 1]]
-        self.pole_ind = pole_ind          
+        self.pole_ind = pole_ind
 
-    def lsfd(self, whose_poles='own', FRF_ind=None):
+    def lsfd(self, whose_poles='own', FRF_ind='all', f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True):
+        """Least square frequency domain 1D (Participation factor excluded)
+        
+        :param whose_poles: Whose poles to use, defaults to 'own'
+        :type whose_poles: object or string ('own'), optional
+        :param FRF_ind: FRF at which location to reconstruct, defaults to 'all'
+        :type FRF_ind: int or 'all', optional
+        :param f_lower: lower limit on frequency for reconstruction. If None, self.lower is used, defaults to None
+        :type f_lower: float, optional
+        :param f_upper: upper limit on frequency for reconstruction. If None, self.lower is used, defaults to None
+        :type f_upper: float, optional
+        :param complex_mode: Return complex modes, defaults to True
+        :type complex_mode: bool, optional
+        :param upper_r: Compute upper residual, defaults to True
+        :type upper_r: bool, optional
+        :param lower_r: Compute lower residual, defaults to True
+        :type lower_r: bool, optional
         """
-        Modal constants and FRF reconstruction based on LSFD method.
-
-        :param whose_poles: Use own poles or poles from another object (object)
-        :param FRF_ind: Reconstruct FRF on location (int) with this index or 
-                        reconstruct all ('all') or reconstruct None, defaults to None
-        :return: modal constants or reconstructed FRF, modal constants
-        """
-        ndim = self.frf.ndim
         if whose_poles == 'own':
             whose_poles = self
 
@@ -442,42 +455,142 @@ class lscf():
             poles.append(whose_poles.all_poles[pole_ind[i, 0]][pole_ind[i, 1]])
         poles = np.asarray(poles)
 
+        # concatenate frequency and FRF array
+        if f_lower == None:
+            f_lower = self.lower
 
-        w = np.append(-self.omega[1:][::-1], self.omega[1:])
-        alpha = np.append(self.frf[:, 1:].conjugate()[
-                          :, ::-1], self.frf[:, 1:], ndim-1)
-        TA = np.ones([len(w), n_poles+2], complex)
+        if f_upper == None:
+            f_upper = self.upper
 
-        for n in range(n_poles):
-            TA[:, n] = 1/(1j*w - poles[n])
-        TA[:, -2] = -1/w**2
-        TA[:, -1] = np.ones_like(w)
-        AT = np.linalg.pinv(TA)
+        lower_ind = np.argmin(np.abs(self.freq - f_lower))
+        upper_ind = np.argmin(np.abs(self.freq - f_upper))
 
-        if ndim == 1:
-            A_LSFD = np.dot(AT, self.frf)
-        elif ndim == 2:
-            IO = self.frf.shape[0]
-            A_LSFD = np.zeros([IO, n_poles+2], complex)
-            for v in range(IO):
-                A_LSFD[v, :] = np.dot(AT, alpha[v, :])
-        self.A = A_LSFD
+        _freq = self.freq[lower_ind:upper_ind]
+        _FRF_mat = self.frf[:, lower_ind:upper_ind]
+        ome = 2 * np.pi * _freq
+        M_2 = len(poles)
+        TA = np.ones([len(ome), M_2*2+4])
+
+        # Real
+        for n in range(M_2):
+            TA[:, n] = np.real(1/(1j*ome-poles[n])+1 /
+                               (1j*ome-np.conj(poles[n])))
+
+        # Imag
+        for n in range(M_2):
+            if complex_mode:
+                TA[:, M_2 + n] = np.imag(1/(1j*ome-poles[n]) -
+                                         1/(1j*ome-np.conj(poles[n])))
+            else:
+                TA[:, M_2 + n] = 0
+
+        # Upper & Lower
+        for i in range(len(ome)):
+            if ome[i] == 0:
+                _ome = 0.01
+            else:
+                _ome = ome[i]
+            if lower_r:
+                TA[i, -4] = -np.real(1/(_ome)**2)
+                TA[i, -3] = -np.imag(1/(_ome)**2)
+            else:
+                TA[i, -4] = 0
+                TA[i, -3] = 0
+
+        if upper_r:
+            TA[:, -2] = np.real(np.ones_like(ome))
+            TA[:, -1] = np.imag(np.ones_like(ome))
+        else:
+            TA[:, -2] = 0
+            TA[:, -1] = 0
+
+        AT = np.linalg.pinv(TA.T@TA)@TA.T
+        IO = self.frf.shape[0]
+        A_LSFD = np.zeros([IO, 2*M_2+4])
+
+        for v in range(IO):
+            A_LSFD[v, :] = AT@_FRF_mat[v, :]
+
+        self.A = -(A_LSFD[:, :M_2] + 1j*A_LSFD[:, M_2:-4])
+        self.LR = A_LSFD[:, -4]+1j*A_LSFD[:, -3]
+        self.UR = A_LSFD[:, -2]+1j*A_LSFD[:, -1]
         self.poles = poles
 
         # FRF reconstruction
         if FRF_ind is None:
-            return A_LSFD
+            return self.A
+
         elif FRF_ind == 'all':
             n = self.frf.shape[0]
             frf_ = np.zeros((n, len(self.omega)), complex)
             for i in range(n):
                 frf_[i] = self.FRF_reconstruct(i)
-            return frf_, A_LSFD
+
+            return frf_, self.A
+
         elif isinstance(FRF_ind, int):
             frf_ = self.FRF_reconstruct(FRF_ind)
-            return frf_, A_LSFD
+            
+            return frf_, self.A
+
         else:
             raise Exception('FRF_ind must be None, "all" or int')
+
+    # def lsfd_old(self, whose_poles='own', FRF_ind=None):
+    #     """
+    #     Modal constants and FRF reconstruction based on LSFD method.
+
+    #     :param whose_poles: Use own poles or poles from another object (object)
+    #     :param FRF_ind: Reconstruct FRF on location (int) with this index or 
+    #                     reconstruct all ('all') or reconstruct None, defaults to None
+    #     :return: modal constants or reconstructed FRF, modal constants
+    #     """
+    #     ndim = self.frf.ndim
+    #     if whose_poles == 'own':
+    #         whose_poles = self
+
+    #     pole_ind = np.asarray(whose_poles.pole_ind, dtype=int)
+    #     n_poles = pole_ind.shape[0]
+    #     poles = []
+    #     for i in range(n_poles):
+    #         poles.append(whose_poles.all_poles[pole_ind[i, 0]][pole_ind[i, 1]])
+    #     poles = np.asarray(poles)
+
+    #     w = np.append(-self.omega[1:][::-1], self.omega[1:])
+    #     alpha = np.append(self.frf[:, 1:].conjugate()[
+    #                       :, ::-1], self.frf[:, 1:], ndim-1)
+    #     TA = np.ones([len(w), n_poles+2], complex)
+
+    #     for n in range(n_poles):
+    #         TA[:, n] = 1/(1j*w - poles[n])
+    #     TA[:, -2] = -1/w**2
+    #     TA[:, -1] = np.ones_like(w)
+    #     AT = np.linalg.pinv(TA)
+
+    #     if ndim == 1:
+    #         A_LSFD = np.dot(AT, self.frf)
+    #     elif ndim == 2:
+    #         IO = self.frf.shape[0]
+    #         A_LSFD = np.zeros([IO, n_poles+2], complex)
+    #         for v in range(IO):
+    #             A_LSFD[v, :] = np.dot(AT, alpha[v, :])
+    #     self.A = A_LSFD
+    #     self.poles = poles
+
+    #     # FRF reconstruction
+    #     if FRF_ind is None:
+    #         return A_LSFD
+    #     elif FRF_ind == 'all':
+    #         n = self.frf.shape[0]
+    #         frf_ = np.zeros((n, len(self.omega)), complex)
+    #         for i in range(n):
+    #             frf_[i] = self.FRF_reconstruct(i)
+    #         return frf_, A_LSFD
+    #     elif isinstance(FRF_ind, int):
+    #         frf_ = self.FRF_reconstruct(FRF_ind)
+    #         return frf_, A_LSFD
+    #     else:
+    #         raise Exception('FRF_ind must be None, "all" or int')
 
     def FRF_reconstruct(self, FRF_ind):
         """Reconstruct FRF based on modal constants.
@@ -487,14 +600,14 @@ class lscf():
         """
 
         FRF_true = np.zeros(len(self.omega), complex)
-        for n in range(self.A.shape[1]-2):
+        for n in range(self.A.shape[1]):
             FRF_true += (self.A[FRF_ind, n] /
                          (1j*self.omega - self.poles[n])) + \
-                         (np.conjugate(self.A[FRF_ind, n]) /
-                         (1j*self.omega - np.conjugate(self.poles[n])))
+                (np.conjugate(self.A[FRF_ind, n]) /
+                 (1j*self.omega - np.conjugate(self.poles[n])))
 
-        FRF_true += -self.A[FRF_ind, -2] / \
-            (self.omega**2) + self.A[FRF_ind, -1]
+        FRF_true += -self.LR[FRF_ind] / \
+            (self.omega**2) + self.UR[FRF_ind]
         return FRF_true
 
     def print_modal_data(self):
@@ -539,7 +652,7 @@ def redundant_values(omega, xi, prec):
                 test_omega[i, j] = 1
             else:
                 test_omega[i, j] = 0
-   
+
     test = np.sum(test_omega, axis=0)
 
     omega_mod = omega[np.argwhere(test < 1)]
@@ -565,7 +678,7 @@ def stabilisation(sr, nmax, err_fn, err_xi):
     :return test_fn: updated eigenfrequencies stabilisation test matrix
     :return test_xi: updated damping stabilisation test matrix
     """
-    
+
     # TODO: check this later for optimisation # this doffers by LSCE and LSCF
     fn_temp = np.zeros((2*nmax, nmax), dtype='double')
     xi_temp = np.zeros((2*nmax, nmax), dtype='double')
@@ -591,15 +704,17 @@ def stabilisation(sr, nmax, err_fn, err_xi):
             xi_test = np.zeros((len(xi), len(xi_temp[:, n - 1])), dtype='int')
 
             for i in range(len(fn)):
-                fn_test[i, np.abs((fn[i] - fn_temp[:, n-2])/fn_temp[:, n-2]) < err_fn] = 1
-                xi_test[i, np.abs((xi[i] - xi_temp[:, n-2])/xi_temp[:, n-2]) < err_xi] = 1
+                fn_test[i, np.abs((fn[i] - fn_temp[:, n-2]) /
+                                  fn_temp[:, n-2]) < err_fn] = 1
+                xi_test[i, np.abs((xi[i] - xi_temp[:, n-2]) /
+                                  xi_temp[:, n-2]) < err_xi] = 1
 
                 fn_temp[i, n - 1] = fn[i]
                 xi_temp[i, n - 1] = xi[i]
 
                 test_fn[i, n-1] = np.sum(fn_test[i, :2*n])
                 test_xi[i, n-1] = np.sum(xi_test[i, :2*n])
-                        
+
     return fn_temp, xi_temp, test_fn, test_xi
 
 
@@ -625,9 +740,10 @@ def irfft_adjusted_lower_limit(x, low_lim, indices):
 
     return a - b
 
+
 def poles_correction(poles, df):
     """Shifting the poles for df.
-    
+
     :param pole: poles for current polynomial order
     :type pole: array
     :param df: frequency step
