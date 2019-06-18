@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 import scipy.linalg
 from tqdm import tqdm
-from scipy.linalg import toeplitz
+from scipy.linalg import toeplitz, companion
 
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -184,6 +184,7 @@ class lscf():
         self.all_poles = []
         self.pole_freq = []
         self.pole_xi = []
+        self.partfactors = []
 
         lower_ind = np.argmin(np.abs(self.freq - self.lower))
         n = self.pol_order_high * 2
@@ -222,6 +223,10 @@ class lscf():
             # Z-domain (for discrete-time domain model)
             poles = -np.log(sr) / self.sampling_time
             # poles = poles_correction(_poles, self.freq[1]-self.freq[0])
+            
+            _t = companion(np.append(a0an1, 1)[::-1])
+            _v,_w = np.linalg.eig(_t)
+            self.partfactors.append(_w[-1,:])
 
             f_pole, ceta = complex_freq_to_freq_and_damp(poles)
 
