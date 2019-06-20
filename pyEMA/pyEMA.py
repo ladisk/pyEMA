@@ -4,6 +4,7 @@ import time
 import scipy.linalg
 from tqdm import tqdm
 from scipy.linalg import toeplitz, companion
+from scipy.optimize import least_squares
 
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -406,25 +407,57 @@ class lscf():
         self.nat_freq.append(self.pole_freq[y_ind][sel])
         self.nat_xi.append(self.pole_xi[y_ind][sel])
 
-    def select_closest_poles(self, approx_nat_freq):
+    def select_closest_poles(self, approx_nat_freq, f_window=50, fn_temp=0.001, xi_temp=0.05):
         """Identification of natural frequency and damping.
 
-        If `approx_nat_freq` is used, the method finds closest poles of of the polynomial with
-        the highest order.
+        If `approx_nat_freq` is used, the method finds closest poles of the polynomial.
 
         :param approx_nat_freq: Approximate natural frequency value
         :type approx_nat_freq: list
         """
-        y_ind = -1
         pole_ind = []
-        for i, fr in enumerate(approx_nat_freq):
-            sel = np.argmin(np.abs(self.pole_freq[y_ind] - fr))
-            pole_ind.append(
-                [y_ind, np.argmin(np.abs(self.pole_freq[y_ind] - self.pole_freq[y_ind][sel]))])
+        sel_ind = []
 
-        pole_ind = np.asarray(pole_ind)
-        self.nat_freq = self.pole_freq[y_ind][pole_ind[:, 1]]
-        self.nat_xi = self.pole_xi[y_ind][pole_ind[:, 1]]
+        Nmax = self.pol_order_high
+        poles = self.all_poles
+        fn_temp, xi_temp, test_fn, test_xi = stabilisation(poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
+        b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0))) # select the stable poles
+
+        mask = np.zeros_like(fn_temp)
+        mask[b[:, 0], b[:, 1]] = 1 # mask the unstable poles
+        f_stable = fn_temp * mask
+        xi_stable = xi_temp * mask
+        f_stable[f_stable != f_stable] = 0
+        xi_stable[xi_stable != xi_stable] = 0
+
+        self.f_stable = f_stable
+        f_windows = [f_window//i for i in range(2, 100) if f_window//i > 3] + [2]
+        for i, fr in enumerate(approx_nat_freq):
+            # Optimize the approximate frequency
+            def fun(x, f_step):
+                f = x[0]
+                _f_stable = f_stable[(f_stable > fr - f_step) & (f_stable < fr + f_step)]
+                return _f_stable.flatten() - f
+
+            for f_w in f_windows:
+                sol = least_squares(lambda x: fun(x, f_w), x0=[fr])
+                fr = sol.x[0]
+
+            # Select the closest frequency
+            f_sel = np.argmin(np.abs(f_stable - fr))
+            f_sel = np.unravel_index(f_sel, f_stable.shape)
+
+            # Find the pole index
+            sel = np.argmin(np.abs(self.pole_freq[f_sel[1]] - fr))
+            pole_ind.append([f_sel[1], np.argmin(np.abs(self.pole_freq[f_sel[1]] - self.pole_freq[f_sel[1]][sel]))])
+
+            sel_ind.append([f_sel[1], f_sel[0]])
+
+        sel_ind = np.asarray(sel_ind, dtype=int)
+        pole_ind = np.asarray(pole_ind, dtype=int)
+
+        self.nat_freq = f_stable[sel_ind[:, 1], sel_ind[:, 0]]
+        self.nat_xi = xi_stable[sel_ind[:, 1], sel_ind[:, 0]]
         self.pole_ind = pole_ind
 
     def lsfd(self, whose_poles='own', FRF_ind='all', f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True):
