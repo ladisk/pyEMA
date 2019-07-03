@@ -149,12 +149,10 @@ class lscf():
                 self.sampling_time = dt
 
     def add_frf(self, pyfrf_object):
-        """Add a FRF at a next location.
+        """
+        Add a FRF at a next location.
 
         This method can be used in relation to pyFRF from Open Modal (https://github.com/openmodal)
-
-        >>> for file in files:
-        >>>     lvm_data = lvm
 
         :param pyfrf_object: FRF object from pyFRF
         :type pyfrf_object: object
@@ -174,7 +172,8 @@ class lscf():
             self.frf = np.concatenate((self.frf, new_frf.T), axis=0)
 
     def get_poles(self, show_progress=False):
-        """Compute poles.
+        """
+        Compute poles based on polynomial approximation of FRF.
 
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
         """
@@ -237,7 +236,8 @@ class lscf():
             self.pole_xi.append(ceta)
 
     def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=True, latex_render=False, title=None):
-        """Render stability chart.
+        """
+        Render stability chart.
 
         Interactive pole selection is possible. Identification of natural 
         frequency and damping coefficients is executed on-the-fly,
@@ -461,7 +461,8 @@ class lscf():
         self.pole_ind = pole_ind
 
     def lsfd(self, whose_poles='own', FRF_ind='all', f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True):
-        """Least square frequency domain 1D (Participation factor excluded)
+        """
+        Least square frequency domain 1D (Participation factor excluded)
         
         :param whose_poles: Whose poles to use, defaults to 'own'
         :type whose_poles: object or string ('own'), optional
@@ -626,7 +627,8 @@ class lscf():
     #         raise Exception('FRF_ind must be None, "all" or int')
 
     def FRF_reconstruct(self, FRF_ind):
-        """Reconstruct FRF based on modal constants.
+        """
+        Reconstruct FRF based on modal constants.
 
         :param FRF_ind: Reconstruct FRF on location with this index, int
         :return: Reconstructed FRF
@@ -644,7 +646,9 @@ class lscf():
         return FRF_true
 
     def print_modal_data(self):
-        """Show modal data in a table-like structure."""
+        """
+        Show modal data in a table-like structure.
+        """
         print('   Nat. f.      Damping')
         print(23*'-')
         for i, f in enumerate(self.nat_freq):
@@ -775,7 +779,8 @@ def irfft_adjusted_lower_limit(x, low_lim, indices):
 
 
 def poles_correction(poles, df):
-    """Shifting the poles for df.
+    """
+    Shifting the poles for df.
 
     :param pole: poles for current polynomial order
     :type pole: array
