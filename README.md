@@ -19,25 +19,28 @@ a = pyema.lscf(
 a.get_poles()
 ```
 ### Determine correct poles:
+The stable poles can be determined in two ways:
 1. Display **stability chart**
     ```
-    a.stab_chart(poles='all', legend=False)
+    a.stab_chart()
     ```
     The stability chart displayes calculated poles and the user can hand-pick the stable ones. Reconstruction is done on-the-fly. In this case the reconstruction is not necessary since the user can access FRF matrix and modal constant matrix:
     ```
     a.H # FRF matrix
     a.A # modal constants matrix
     ```
-2. If the approximate values of natural frequencies are already known, it is not necessary to display the stability chart as it is computationally expensive:
+2. If the approximate values of natural frequencies are already known, it is not necessary to display the stability chart as it can be computationally expensive:
     ```
     approx_nat_freq = [314, 864]
     a.select_closest_poles(approx_nat_freq)
     ```
-    ### Access the identified natural frequencies and damping coefficients:
-    ```
-    a.nat_freq # natrual frequencies
-    a.nat_xi # damping coefficients
-    ```
+    In this case, the reconstruction is not computed. `lsfd` must be called (see below).
+
+Natural frequencies and damping coefficients can now be accessed:
+```
+a.nat_freq # natrual frequencies
+a.nat_xi # damping coefficients
+```
 ### Reconstruction:
 There are two types of reconstruction possible:
 1. Reconstruction using **own** poles
