@@ -560,11 +560,12 @@ class lscf():
             for i in range(n):
                 frf_[i] = self.FRF_reconstruct(i)
 
+            self.H = frf_
             return frf_, self.A
 
         elif isinstance(FRF_ind, int):
             frf_ = self.FRF_reconstruct(FRF_ind)
-            
+            self.H = frf_
             return frf_, self.A
 
         else:
