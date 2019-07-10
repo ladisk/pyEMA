@@ -2,6 +2,8 @@
 
 Experimental and operational modal analysis
 
+Check out the [documentation](https://pyema.readthedocs.io/en/latest/).
+
 ## Basic usage
 
 ### Make an instance of **lscf** class:

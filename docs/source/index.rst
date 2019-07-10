@@ -6,28 +6,16 @@
 Welcome to pyEMA's documentation!
 =================================
 
+This is the documentation for pyEMA package. Check out the project source_.
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 2
+    :caption: Contents
 
-This is the documentation for pyEMA package. The core of the package is the `lscf` class. For further details see the documented
-functions and methods below.
+    basic_usage
+    code_documentation
 
-The `lscf` class
-==============
-.. autoclass:: pyEMA.pyEMA.lscf
-    :members:
 
-Support functions
-=================
-.. autofunction:: pyEMA.pyEMA.complex_freq_to_freq_and_damp
-.. autofunction:: pyEMA.pyEMA.redundant_values
-.. autofunction:: pyEMA.pyEMA.stabilisation
-.. autofunction:: pyEMA.pyEMA.irfft_adjusted_lower_limit
 
-Indices and tables
-==================
+.. _source: https://github.com/ladisk/pyEMA
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
