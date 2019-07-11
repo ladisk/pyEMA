@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 desc = """\
 Experimental and operational modal analysis
-=============
+===========================================
 This module supports experimental and operational modal analysis. 
 
 For the showcase see: https://github.com/ladisk/pyEMA/blob/master/pyEMA%20Showcase.ipynb
