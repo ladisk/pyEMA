@@ -176,6 +176,8 @@ class lscf():
         Compute poles based on polynomial approximation of FRF.
 
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
+
+        :param show_progress: Show progress bar
         """
         if show_progress:
             def tqdm_range(x): return tqdm(x, ncols=100)
@@ -244,19 +246,20 @@ class lscf():
         as well as computing reconstructed FRF and modal constants.
 
         The identification can be done in two ways:
-        1.
-        >>> a.stab_chart() # pick poles
-        >>> a.nat_freq # natural frequencies
-        >>> a.nat_xi # damping coefficients
-        >>> a.H # reconstructed FRF matrix
-        >>> a.A # modal constants (a.A[:, -2:] are Lower and Upper residual)
+        ::
+            # 1. Using stability chart
+            >>> a.stab_chart() # pick poles
+            >>> a.nat_freq # natural frequencies
+            >>> a.nat_xi # damping coefficients
+            >>> a.H # reconstructed FRF matrix
+            >>> a.A # modal constants (a.A[:, -2:] are Lower and Upper residual)
 
-        2.
-        >>> approx_nat_freq = [234, 545]
-        >>> a.select_closest_poles(approx_nat_freq)
-        >>> a.nat_freq # natural frequencies
-        >>> a.nat_xi # damping coefficients
-        >>> H, A = a.lsfd(whose_poles='own', FRF_ind='all) # reconstruction
+            # 2. Using approximate natural frequencies
+            >>> approx_nat_freq = [234, 545]
+            >>> a.select_closest_poles(approx_nat_freq)
+            >>> a.nat_freq # natural frequencies
+            >>> a.nat_xi # damping coefficients
+            >>> H, A = a.lsfd(whose_poles='own', FRF_ind='all) # reconstruction
         """
         if poles == 'all':
             poles = self.all_poles
@@ -396,7 +399,8 @@ class lscf():
         root.mainloop()  # Tkinter
 
     def _select_closest_poles_on_the_fly(self):
-        """On-the-fly selection of the closest poles.        
+        """
+        On-the-fly selection of the closest poles.        
         """
         y_ind = int(np.argmin(np.abs(np.arange(0, len(self.pole_freq)
                                                )-self.y_data_pole)))  # Find closest pole order
@@ -408,12 +412,15 @@ class lscf():
         self.nat_xi.append(self.pole_xi[y_ind][sel])
 
     def select_closest_poles(self, approx_nat_freq, f_window=50, fn_temp=0.001, xi_temp=0.05):
-        """Identification of natural frequency and damping.
+        """
+        Identification of natural frequency and damping.
 
         If `approx_nat_freq` is used, the method finds closest poles of the polynomial.
 
         :param approx_nat_freq: Approximate natural frequency value
         :type approx_nat_freq: list
+        :param f_window: width of the optimization frequency window when searching for stable poles
+        :type f_window: float, int
         """
         pole_ind = []
         sel_ind = []
@@ -436,21 +443,26 @@ class lscf():
             # Optimize the approximate frequency
             def fun(x, f_step):
                 f = x[0]
-                _f_stable = f_stable[(f_stable > fr - f_step) & (f_stable < fr + f_step)]
+                _f_stable = f_stable[(f_stable > (fr - f_step)) & (f_stable < (fr + f_step))]
                 return _f_stable.flatten() - f
 
             for f_w in f_windows:
                 sol = least_squares(lambda x: fun(x, f_w), x0=[fr])
                 fr = sol.x[0]
-
+            
             # Select the closest frequency
             f_sel = np.argmin(np.abs(f_stable - fr))
             f_sel = np.unravel_index(f_sel, f_stable.shape)
 
-            # Find the pole index
+            # The pole index is known (f_sel[1])
+            # The frequency index for this pole order is not known
+            # A reconstructed pole is compared with existing poles to
+            # get the index of the pole.
             sel = np.argmin(np.abs(self.pole_freq[f_sel[1]] - fr))
-            pole_ind.append([f_sel[1], np.argmin(np.abs(self.pole_freq[f_sel[1]] - self.pole_freq[f_sel[1]][sel]))])
-
+            selected_pole = -xi_temp[f_sel]*(2*np.pi*fn_temp[f_sel]) + 1j*(2*np.pi*fn_temp[f_sel])*np.sqrt(1-xi_temp[f_sel]**2)
+            _sel = np.argmin(np.abs(self.all_poles[f_sel[1]] - selected_pole))
+            
+            pole_ind.append([f_sel[1], _sel])
             sel_ind.append([f_sel[1], f_sel[0]])
 
         sel_ind = np.asarray(sel_ind, dtype=int)
@@ -459,6 +471,7 @@ class lscf():
         self.nat_freq = f_stable[sel_ind[:, 1], sel_ind[:, 0]]
         self.nat_xi = xi_stable[sel_ind[:, 1], sel_ind[:, 0]]
         self.pole_ind = pole_ind
+
 
     def lsfd(self, whose_poles='own', FRF_ind='all', f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True):
         """
@@ -478,6 +491,7 @@ class lscf():
         :type upper_r: bool, optional
         :param lower_r: Compute lower residual, defaults to True
         :type lower_r: bool, optional
+        :return: modal constants if ``FRF_ind=None``, otherwise reconstructed FRFs and modal constants
         """
         if whose_poles == 'own':
             whose_poles = self
@@ -759,8 +773,8 @@ def stabilisation(sr, nmax, err_fn, err_xi):
 def irfft_adjusted_lower_limit(x, low_lim, indices):
     """
     Compute the ifft of real matrix x with adjusted summation limits:
-        y(j) = sum[k=-n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2,
-                   n-1] x[k] * exp(sqrt(-1)*j*k* 2*pi/n),
+    ::
+        y(j) = sum[k=-n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2, n-1] x[k] * exp(sqrt(-1)*j*k* 2*pi/n),
         j =-n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
 
     :param x: Single-sided real array to Fourier transform.
