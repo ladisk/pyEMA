@@ -6,11 +6,13 @@ Experimental and operational modal analysis
 This module supports experimental and operational modal analysis. 
 
 For the showcase see: https://github.com/ladisk/pyEMA/blob/master/pyEMA%20Showcase.ipynb
+
+Documentation is located here: https://pyema.readthedocs.io/en/latest/
 """
 
 from setuptools import setup
 setup(name='pyEMA',
-      version='0.18',
+      version='0.20',
       author='Klemen Zaletelj, Tomaž Bregar, Domen Gorjup, Janko Slavič',
       author_email='janko.slavic@fs.uni-lj.si, ladisk@gmail.com',
       description='Experimental and operational modal analysis.',

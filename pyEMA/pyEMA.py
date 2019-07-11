@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from .tools import *
 
-__version__ = '0.18'
+__version__ = '0.20'
 
 
 class lscf():
