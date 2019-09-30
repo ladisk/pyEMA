@@ -18,7 +18,7 @@ from .tools import *
 __version__ = '0.21'
 
 
-class lscf():
+class Model():
     """
     Least-Squares Complex Frequency-domain estimate.
     """
@@ -171,7 +171,7 @@ class lscf():
         else:
             self.frf = np.concatenate((self.frf, new_frf.T), axis=0)
 
-    def get_poles(self, show_progress=False):
+    def lscf_poles(self, show_progress=False):
         """
         Compute poles based on polynomial approximation of FRF.
 
