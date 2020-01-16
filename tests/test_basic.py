@@ -11,7 +11,7 @@ def test_1():
     freq, H1_main = np.load("./data/acc_data.npy", allow_pickle=True)
     FRF = H1_main[:,1,:]
     freq = freq
-    acc = pyEMA.lscf(frf=FRF, freq=freq, lower=10, 
+    acc = pyEMA.Model(frf=FRF, freq=freq, lower=10, 
                     upper=1000, pol_order_high=60)
     
     acc.get_poles()
@@ -21,7 +21,7 @@ def test_1():
     np.testing.assert_almost_equal(acc.nat_freq[0], 176.20608072643822, decimal=5)
     np.testing.assert_almost_equal(acc.nat_freq[1], 476.75981357916606, decimal=5)
     
-    H, A = acc.lsfd(whose_poles='own', FRF_ind='all')
+    H, A = acc.get_constants(whose_poles='own', FRF_ind='all')
     assert A.shape[0]==6
     assert A.shape[1]==2
     assert H.shape[0]==6
