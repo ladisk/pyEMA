@@ -20,7 +20,7 @@ __version__ = '0.21'
 
 class Model():
     """
-    Least-Squares Complex Frequency-domain estimate.
+    Modal model of frequency response functions.
     """
 
     def __init__(self,
@@ -31,59 +31,7 @@ class Model():
                  upper=10000,
                  pol_order_high=100,
                  pyfrf=False):
-        """The LSCF method is an frequency-domain Linear Least Squares
-        estimator optimized  for modal parameter estimation. The choice of
-        the most important algorithm characteristics is based on the
-        results in [1] (Section 5.3.3.) and can be summarized as:
-
-            - Formulation: the normal equations [1]
-            (Eq. 5.26: [sum(Tk - Sk.H * Rk^-1 * Sk)]*ThetaA=D*ThetaA = 0)
-            are constructed for the common denominator discrete-time
-            model in the Z-domain. Consequently, by looping over the
-            outputs and inputs, the submatrices Rk, Sk, and Tk are
-            formulated through the use of the FFT algorithm as Toeplitz
-            structured (n+1) square matrices. Using complex coefficients,
-            the FRF data within the frequency band of interest (FRF-zoom)
-            is projected in the Z-domain in the interval of [0, 2*pi] in
-            order to improve numerical conditioning. (In the case that
-            real coefficients are used, the data is projected in the
-            interval of [0, pi].) The projecting on an interval that does
-            not completely describe the unity circle, say [0, alpha*2*pi]
-            where alpha is typically 0.9-0.95. Deliberately over-modeling
-            is best applied to cope with discontinuities. This is
-            justified by the use of a discrete time model in the Z-domain,
-            which is much more robust for a high order of the transfer
-            function polynomials.
-
-            - Solver: the normal equations can be solved for the
-            denominator coefficients ThetaA by computing the Least-Squares
-            (LS) or mixed Total-Least-Squares (TLS) solution. The inverse
-            of the square matrix D for the LS solution is computed by
-            means of a pseudo inverse operation for reasons of numerical
-            stability, while the mixed LS-TLS solution is computed using
-            an SVD (Singular Value Decomposition).
-
-        Literature:
-            [1] Verboven, P., Frequency-domain System Identification for
-                Modal Analysis, Ph. D. thesis, Mechanical Engineering Dept.
-                (WERK), Vrije Universiteit Brussel, Brussel, (Belgium),
-                May 2002, (http://mech.vub.ac.be/avrg/PhD/thesis_PV_web.pdf)
-            [2] Verboven, P., Guillaume, P., Cauberghe, B., Parloo, E. and
-                Vanlanduit S., Stabilization Charts and Uncertainty Bounds
-                For Frequency-Domain Linear Least Squares Estimators, Vrije
-                Universiteit Brussel(VUB), Mechanical Engineering Dept.
-                (WERK), Acoustic and Vibration Research Group (AVRG),
-                Pleinlaan 2, B-1050 Brussels, Belgium,
-                e-mail: Peter.Verboven@vub.ac.be, url:
-                (http://sem-proceedings.com/21i/sem.org-IMAC-XXI-Conf-s02p01
-                -Stabilization-Charts-Uncertainty-Bounds-Frequency-Domain-
-                Linear-Least.pdf)
-            [3] P. Guillaume, P. Verboven, S. Vanlanduit, H. Van der
-                Auweraer, B. Peeters, A Poly-Reference Implementation of the
-                Least-Squares Complex Frequency-Domain Estimator, Vrije
-                Universiteit Brussel, LMS International
-
-
+        """
         :param frf: Frequency response function matrix (must be receptance!)
         :type frf: ndarray
         :param freq: Frequency array
@@ -171,14 +119,70 @@ class Model():
         else:
             self.frf = np.concatenate((self.frf, new_frf.T), axis=0)
 
-    def lscf_poles(self, show_progress=False):
-        """
-        Compute poles based on polynomial approximation of FRF.
+    def get_poles(self, method='lscf', show_progress=True):
+        """Compute poles based on polynomial approximation of FRF.
 
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
 
+        The LSCF method is an frequency-domain Linear Least Squares
+        estimator optimized  for modal parameter estimation. The choice of
+        the most important algorithm characteristics is based on the
+        results in [1] (Section 5.3.3.) and can be summarized as:
+
+            - Formulation: the normal equations [1]
+            (Eq. 5.26: [sum(Tk - Sk.H * Rk^-1 * Sk)]*ThetaA=D*ThetaA = 0)
+            are constructed for the common denominator discrete-time
+            model in the Z-domain. Consequently, by looping over the
+            outputs and inputs, the submatrices Rk, Sk, and Tk are
+            formulated through the use of the FFT algorithm as Toeplitz
+            structured (n+1) square matrices. Using complex coefficients,
+            the FRF data within the frequency band of interest (FRF-zoom)
+            is projected in the Z-domain in the interval of [0, 2*pi] in
+            order to improve numerical conditioning. (In the case that
+            real coefficients are used, the data is projected in the
+            interval of [0, pi].) The projecting on an interval that does
+            not completely describe the unity circle, say [0, alpha*2*pi]
+            where alpha is typically 0.9-0.95. Deliberately over-modeling
+            is best applied to cope with discontinuities. This is
+            justified by the use of a discrete time model in the Z-domain,
+            which is much more robust for a high order of the transfer
+            function polynomials.
+
+            - Solver: the normal equations can be solved for the
+            denominator coefficients ThetaA by computing the Least-Squares
+            (LS) or mixed Total-Least-Squares (TLS) solution. The inverse
+            of the square matrix D for the LS solution is computed by
+            means of a pseudo inverse operation for reasons of numerical
+            stability, while the mixed LS-TLS solution is computed using
+            an SVD (Singular Value Decomposition).
+
+        Literature:
+            [1] Verboven, P., Frequency-domain System Identification for
+                Modal Analysis, Ph. D. thesis, Mechanical Engineering Dept.
+                (WERK), Vrije Universiteit Brussel, Brussel, (Belgium),
+                May 2002, (http://mech.vub.ac.be/avrg/PhD/thesis_PV_web.pdf)
+            [2] Verboven, P., Guillaume, P., Cauberghe, B., Parloo, E. and
+                Vanlanduit S., Stabilization Charts and Uncertainty Bounds
+                For Frequency-Domain Linear Least Squares Estimators, Vrije
+                Universiteit Brussel(VUB), Mechanical Engineering Dept.
+                (WERK), Acoustic and Vibration Research Group (AVRG),
+                Pleinlaan 2, B-1050 Brussels, Belgium,
+                e-mail: Peter.Verboven@vub.ac.be, url:
+                (http://sem-proceedings.com/21i/sem.org-IMAC-XXI-Conf-s02p01
+                -Stabilization-Charts-Uncertainty-Bounds-Frequency-Domain-
+                Linear-Least.pdf)
+            [3] P. Guillaume, P. Verboven, S. Vanlanduit, H. Van der
+                Auweraer, B. Peeters, A Poly-Reference Implementation of the
+                Least-Squares Complex Frequency-Domain Estimator, Vrije
+                Universiteit Brussel, LMS International
+
+        :param method: The method of poles calculation.
         :param show_progress: Show progress bar
         """
+        if method != 'lscf':
+            raise Exception(
+                f'no method "{method}". Currently only "lscf" method is implemented.')
+
         if show_progress:
             def tqdm_range(x): return tqdm(x, ncols=100)
         else:
@@ -259,7 +263,7 @@ class Model():
             >>> a.select_closest_poles(approx_nat_freq)
             >>> a.nat_freq # natural frequencies
             >>> a.nat_xi # damping coefficients
-            >>> H, A = a.lsfd(whose_poles='own', FRF_ind='all) # reconstruction
+            >>> H, A = a.get_constants(whose_poles='own', FRF_ind='all) # reconstruction
         """
         if poles == 'all':
             poles = self.all_poles
@@ -271,7 +275,7 @@ class Model():
                 np.abs(self.frf), axis=0), alpha=0.7, color='k')
 
             if not init:
-                self.H, self.A = self.lsfd(whose_poles='own', FRF_ind='all')
+                self.H, self.A = self.get_constants(whose_poles='own', FRF_ind='all')
                 ax2.semilogy(self.freq, np.average(
                     np.abs(self.H), axis=0), color='r', lw=2)
 
@@ -427,29 +431,33 @@ class Model():
 
         Nmax = self.pol_order_high
         poles = self.all_poles
-        fn_temp, xi_temp, test_fn, test_xi = stabilisation(poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
-        b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0))) # select the stable poles
+        fn_temp, xi_temp, test_fn, test_xi = stabilisation(
+            poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
+        # select the stable poles
+        b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0)))
 
         mask = np.zeros_like(fn_temp)
-        mask[b[:, 0], b[:, 1]] = 1 # mask the unstable poles
+        mask[b[:, 0], b[:, 1]] = 1  # mask the unstable poles
         f_stable = fn_temp * mask
         xi_stable = xi_temp * mask
         f_stable[f_stable != f_stable] = 0
         xi_stable[xi_stable != xi_stable] = 0
 
         self.f_stable = f_stable
-        f_windows = [f_window//i for i in range(2, 100) if f_window//i > 3] + [2]
+        f_windows = [
+            f_window//i for i in range(2, 100) if f_window//i > 3] + [2]
         for i, fr in enumerate(approx_nat_freq):
             # Optimize the approximate frequency
             def fun(x, f_step):
                 f = x[0]
-                _f_stable = f_stable[(f_stable > (fr - f_step)) & (f_stable < (fr + f_step))]
+                _f_stable = f_stable[(f_stable > (fr - f_step))
+                                     & (f_stable < (fr + f_step))]
                 return _f_stable.flatten() - f
 
             for f_w in f_windows:
                 sol = least_squares(lambda x: fun(x, f_w), x0=[fr])
                 fr = sol.x[0]
-            
+
             # Select the closest frequency
             f_sel = np.argmin(np.abs(f_stable - fr))
             f_sel = np.unravel_index(f_sel, f_stable.shape)
@@ -459,9 +467,10 @@ class Model():
             # A reconstructed pole is compared with existing poles to
             # get the index of the pole.
             sel = np.argmin(np.abs(self.pole_freq[f_sel[1]] - fr))
-            selected_pole = -xi_temp[f_sel]*(2*np.pi*fn_temp[f_sel]) + 1j*(2*np.pi*fn_temp[f_sel])*np.sqrt(1-xi_temp[f_sel]**2)
+            selected_pole = -xi_temp[f_sel]*(2*np.pi*fn_temp[f_sel]) + 1j*(
+                2*np.pi*fn_temp[f_sel])*np.sqrt(1-xi_temp[f_sel]**2)
             _sel = np.argmin(np.abs(self.all_poles[f_sel[1]] - selected_pole))
-            
+
             pole_ind.append([f_sel[1], _sel])
             sel_ind.append([f_sel[1], f_sel[0]])
 
@@ -472,11 +481,11 @@ class Model():
         self.nat_xi = xi_stable[sel_ind[:, 1], sel_ind[:, 0]]
         self.pole_ind = pole_ind
 
-
-    def lsfd(self, whose_poles='own', FRF_ind='all', f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True):
+    def get_constants(self, method='lsfd', whose_poles='own', FRF_ind='all',
+                      f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True):
         """
         Least square frequency domain 1D (Participation factor excluded)
-        
+
         :param whose_poles: Whose poles to use, defaults to 'own'
         :type whose_poles: object or string ('own'), optional
         :param FRF_ind: FRF at which location to reconstruct, defaults to 'all'
@@ -493,6 +502,10 @@ class Model():
         :type lower_r: bool, optional
         :return: modal constants if ``FRF_ind=None``, otherwise reconstructed FRFs and modal constants
         """
+        if method != 'lsfd':
+            raise Exception(
+                f'no method "{method}". Currently only "lsfd" method is implemented.')
+
         if whose_poles == 'own':
             whose_poles = self
 
@@ -585,62 +598,6 @@ class Model():
         else:
             raise Exception('FRF_ind must be None, "all" or int')
 
-    # def lsfd_old(self, whose_poles='own', FRF_ind=None):
-    #     """
-    #     Modal constants and FRF reconstruction based on LSFD method.
-
-    #     :param whose_poles: Use own poles or poles from another object (object)
-    #     :param FRF_ind: Reconstruct FRF on location (int) with this index or 
-    #                     reconstruct all ('all') or reconstruct None, defaults to None
-    #     :return: modal constants or reconstructed FRF, modal constants
-    #     """
-    #     ndim = self.frf.ndim
-    #     if whose_poles == 'own':
-    #         whose_poles = self
-
-    #     pole_ind = np.asarray(whose_poles.pole_ind, dtype=int)
-    #     n_poles = pole_ind.shape[0]
-    #     poles = []
-    #     for i in range(n_poles):
-    #         poles.append(whose_poles.all_poles[pole_ind[i, 0]][pole_ind[i, 1]])
-    #     poles = np.asarray(poles)
-
-    #     w = np.append(-self.omega[1:][::-1], self.omega[1:])
-    #     alpha = np.append(self.frf[:, 1:].conjugate()[
-    #                       :, ::-1], self.frf[:, 1:], ndim-1)
-    #     TA = np.ones([len(w), n_poles+2], complex)
-
-    #     for n in range(n_poles):
-    #         TA[:, n] = 1/(1j*w - poles[n])
-    #     TA[:, -2] = -1/w**2
-    #     TA[:, -1] = np.ones_like(w)
-    #     AT = np.linalg.pinv(TA)
-
-    #     if ndim == 1:
-    #         A_LSFD = np.dot(AT, self.frf)
-    #     elif ndim == 2:
-    #         IO = self.frf.shape[0]
-    #         A_LSFD = np.zeros([IO, n_poles+2], complex)
-    #         for v in range(IO):
-    #             A_LSFD[v, :] = np.dot(AT, alpha[v, :])
-    #     self.A = A_LSFD
-    #     self.poles = poles
-
-    #     # FRF reconstruction
-    #     if FRF_ind is None:
-    #         return A_LSFD
-    #     elif FRF_ind == 'all':
-    #         n = self.frf.shape[0]
-    #         frf_ = np.zeros((n, len(self.omega)), complex)
-    #         for i in range(n):
-    #             frf_[i] = self.FRF_reconstruct(i)
-    #         return frf_, A_LSFD
-    #     elif isinstance(FRF_ind, int):
-    #         frf_ = self.FRF_reconstruct(FRF_ind)
-    #         return frf_, A_LSFD
-    #     else:
-    #         raise Exception('FRF_ind must be None, "all" or int')
-
     def FRF_reconstruct(self, FRF_ind):
         """
         Reconstruct FRF based on modal constants.
@@ -670,144 +627,4 @@ class Model():
             print(f'{i+1}) {f:6.1f}\t{self.nat_xi[i]:5.4f}')
 
 
-def complex_freq_to_freq_and_damp(sr):
-    """
-    Convert the complex natural frequencies to natural frequencies and the
-    corresponding dampings.
 
-    :param sr: complex natural frequencies
-    :return: natural frequency and damping
-    """
-
-    fr = np.sign(np.imag(sr)) * np.abs(sr)
-    xir = -sr.real/fr
-    fr /= (2 * np.pi)
-
-    return fr, xir
-
-
-def redundant_values(omega, xi, prec):
-    """
-    This function supresses the redundant values of frequency and damping
-    vectors, which are the consequence of conjugate values
-
-    :param omega: eiqenfrquencies vector
-    :param xi: damping ratios vector
-    :param prec: absoulute precision in order to distinguish between two values
-    """
-
-    N = len(omega)
-    test_omega = np.zeros((N, N), dtype='int')
-    for i in range(1, N):
-        for j in range(0, i):
-            if np.abs((omega[i] - omega[j])) < prec:
-                test_omega[i, j] = 1
-            else:
-                test_omega[i, j] = 0
-
-    test = np.sum(test_omega, axis=0)
-
-    omega_mod = omega[np.argwhere(test < 1)]
-    xi_mod = xi[np.argwhere(test < 1)]
-
-    return omega_mod, xi_mod
-
-
-def stabilisation(sr, nmax, err_fn, err_xi):
-    """
-    A function that computes the stabilisation matrices needed for the
-    stabilisation chart. The computation is focused on comparison of
-    eigenfrequencies and damping ratios in the present step 
-    (N-th model order) with the previous step ((N-1)-th model order). 
-
-    :param sr: list of lists of complex natrual frequencies
-    :param n: maximum number of degrees of freedom
-    :param err_fn: relative error in frequency
-    :param err_xi: relative error in damping
-
-    :return fn_temap eigenfrequencies matrix
-    :return xi_temp: updated damping matrix
-    :return test_fn: updated eigenfrequencies stabilisation test matrix
-    :return test_xi: updated damping stabilisation test matrix
-    """
-
-    # TODO: check this later for optimisation # this doffers by LSCE and LSCF
-    fn_temp = np.zeros((2*nmax, nmax), dtype='double')
-    xi_temp = np.zeros((2*nmax, nmax), dtype='double')
-    test_fn = np.zeros((2*nmax, nmax), dtype='int')
-    test_xi = np.zeros((2*nmax, nmax), dtype='int')
-
-    for nr, n in enumerate(tqdm(range(nmax), ncols=100)):
-        fn, xi = complex_freq_to_freq_and_damp(sr[nr])
-        # elimination of conjugate values in
-        fn, xi = redundant_values(fn, xi, 1e-3)
-        # order to decrease computation time
-        if n == 1:
-            # first step
-            fn_temp[0:len(fn), 0:1] = fn
-            xi_temp[0:len(fn), 0:1] = xi
-
-        else:
-            # Matrix test is created for comparison between present(N-th) and
-            # previous (N-1-th) data (eigenfrequencies). If the value equals:
-            # --> 1, the data is within relative tolerance err_fn
-            # --> 0, the data is outside the relative tolerance err_fn
-            fn_test = np.zeros((len(fn), len(fn_temp[:, n - 1])), dtype='int')
-            xi_test = np.zeros((len(xi), len(xi_temp[:, n - 1])), dtype='int')
-
-            for i in range(len(fn)):
-                fn_test[i, np.abs((fn[i] - fn_temp[:, n-2]) /
-                                  fn_temp[:, n-2]) < err_fn] = 1
-                xi_test[i, np.abs((xi[i] - xi_temp[:, n-2]) /
-                                  xi_temp[:, n-2]) < err_xi] = 1
-
-                fn_temp[i, n - 1] = fn[i]
-                xi_temp[i, n - 1] = xi[i]
-
-                test_fn[i, n-1] = np.sum(fn_test[i, :2*n])
-                test_xi[i, n-1] = np.sum(xi_test[i, :2*n])
-
-    return fn_temp, xi_temp, test_fn, test_xi
-
-
-def irfft_adjusted_lower_limit(x, low_lim, indices):
-    """
-    Compute the ifft of real matrix x with adjusted summation limits:
-    ::
-        y(j) = sum[k=-n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2, n-1] x[k] * exp(sqrt(-1)*j*k* 2*pi/n),
-        j =-n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
-
-    :param x: Single-sided real array to Fourier transform.
-    :param low_lim: lower limit index of the array x.
-    :param indices: list of indices of interest
-    :return: Fourier transformed two-sided array x with adjusted lower limit.
-             Retruns values.
-
-    Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/fft_tools.py
-    """
-
-    nf = 2 * (x.shape[1] - 1)
-    a = (np.fft.irfft(x, n=nf)[:, indices]) * nf
-    b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
-
-    return a - b
-
-
-def poles_correction(poles, df):
-    """
-    Shifting the poles for df.
-
-    :param pole: poles for current polynomial order
-    :type pole: array
-    :param df: frequency step
-    :type df: float
-    :return: corrected pole array
-    :rtype: array
-    """
-
-    a = np.real(poles)
-    b = np.imag(poles)
-    ak = (2*a*df*np.pi)/(np.sqrt(a**2+b**2))
-    bk = (-b+np.sign(b)*np.sqrt((b**2*(a**2+b**2+4*df *
-                                       np.pi*(np.sqrt(a**2+b**2)+df*np.pi)))/(a**2+b**2)))
-    return (a+ak+(b+bk)*1.j)
