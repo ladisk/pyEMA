@@ -4,9 +4,9 @@ A case of typical usage is presented here.
 
 Instance of the `lscf` class
 ----------------------------
-First make a ``lscf`` object:
+First make a ``Model`` object:
 ::
-    a = pyEMA.lscf(
+    a = pyEMA.Model(
         frf_matrix,
         frequency_array,
         lower=10,
@@ -42,7 +42,7 @@ If the approximate values of natural frequencies are already known, it is not ne
     approx_nat_freq = [314, 864]
     a.select_closest_poles(approx_nat_freq)
 
-In this case the reconstruction is not computed. ``lsfd`` method must be called (see below).
+In this case the reconstruction is not computed. ``get_constants`` method must be called (see below).
 
 Reconstruction
 --------------
@@ -51,13 +51,13 @@ There are two types of reconstruction possible:
 
 1. Reconstruction on own poles:
 ::
-    H, A = a.lsfd()
+    H, A = a.get_constants()
 
 **H** is reconstructed FRF matrix and **A** is a matrix of modal constants.
 
 2. Reconstruction on ``c`` usign poles from ``a``:
 ::
-    c = pyEMA.lscf(
+    c = pyEMA.Model(
         frf_matrix,
         frequency_array,
         lower=10,
@@ -65,4 +65,4 @@ There are two types of reconstruction possible:
         pol_order_high=60
     )
 
-    H, A = c.lsfd(whose_poles=a)
+    H, A = c.get_constants(whose_poles=a)

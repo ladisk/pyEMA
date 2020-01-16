@@ -1,14 +1,14 @@
 Code documentation
 ==================
 
-The `lscf` class
+The `Model` class
 ----------------
-.. autoclass:: pyEMA.pyEMA.lscf
+.. autoclass:: pyEMA.pyEMA.Model
     :members:
 
 Support functions
 -----------------
-.. autofunction:: pyEMA.pyEMA.complex_freq_to_freq_and_damp
-.. autofunction:: pyEMA.pyEMA.redundant_values
-.. autofunction:: pyEMA.pyEMA.stabilisation
-.. autofunction:: pyEMA.pyEMA.irfft_adjusted_lower_limit
+.. autofunction:: pyEMA.tools.complex_freq_to_freq_and_damp
+.. autofunction:: pyEMA.tools.redundant_values
+.. autofunction:: pyEMA.tools.stabilisation
+.. autofunction:: pyEMA.tools.irfft_adjusted_lower_limit

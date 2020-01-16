@@ -2,13 +2,13 @@
 
 Experimental and operational modal analysis
 
-Check out the [documentation](https://pyema.readthedocs.io/en/latest/).
+Check out the [documentation](https://pyema.readthedocs.io/en/latest/basic_usage.html).
 
 ## Basic usage
 
-### Make an instance of **lscf** class:
+### Make an instance of `Model` class:
 ```
-a = pyema.lscf(
+a = pyema.Model(
     frf_matrix,
     frequency_array,
     lower=50,
@@ -36,7 +36,7 @@ The stable poles can be determined in two ways:
     approx_nat_freq = [314, 864]
     a.select_closest_poles(approx_nat_freq)
     ```
-    In this case, the reconstruction is not computed. `lsfd` must be called (see below).
+    In this case, the reconstruction is not computed. `get_constants` must be called (see below).
 
 Natural frequencies and damping coefficients can now be accessed:
 ```
@@ -47,19 +47,19 @@ a.nat_xi # damping coefficients
 There are two types of reconstruction possible:
 1. Reconstruction using **own** poles
     ```
-    H, A = a.lsfd(whose_poles='own', FRF_ind='all') 
+    H, A = a.get_constants(whose_poles='own', FRF_ind='all') 
     ```
     **H** is reconstructed FRF matrix and **A** is a matrix of modal constants.
 
 2. Reconstruction on **c** using poles from **a**
     ```
-    c = pyema.lscf(frf_matrix, 
+    c = pyema.Model(frf_matrix, 
         frequency_array, 
         lower=50, 
         upper=10000, 
         pol_order_high=60)
         
-    H, A = c.lsfd(whose_poles=a, FRF_ind='all')
+    H, A = c.get_constants(whose_poles=a, FRF_ind='all')
     ```
 
 [![Build Status](https://travis-ci.com/ladisk/pyEMA.svg?branch=master)](https://travis-ci.com/ladisk/pyEMA)
