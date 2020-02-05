@@ -15,9 +15,6 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from .tools import *
 
-__version__ = '0.21'
-
-
 class Model():
     """
     Modal model of frequency response functions.
