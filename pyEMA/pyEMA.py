@@ -27,7 +27,8 @@ class Model():
                  lower=50,
                  upper=10000,
                  pol_order_high=100,
-                 pyfrf=False):
+                 pyfrf=False,
+                 get_partfactors=False):
         """
         :param frf: Frequency response function matrix (must be receptance!)
         :type frf: ndarray
@@ -92,6 +93,8 @@ class Model():
                 self.sampling_time = 1/(2*self.freq[-1])
             else:
                 self.sampling_time = dt
+        
+        self.get_participation_factors = get_partfactors
 
     def add_frf(self, pyfrf_object):
         """
@@ -210,11 +213,11 @@ class Model():
         t = toeplitz(np.sum(t[:, :n+1], axis=0))
         r = toeplitz(r)
 
-        sr_list = []
+        # Ascending polinomial order pole computation
         for j in tqdm_range(range(2, n+1, 2)):
             d = 0
+            rinv = np.linalg.inv(r[:j+1, :j+1])
             for i in range(nr):
-                rinv = np.linalg.inv(r[:j+1, :j+1])
                 snew = s[i][:j+1, :j+1]
                 d -= np.dot(np.dot(snew[:j+1, :j+1].T,
                                    rinv), snew[:j+1, :j+1])   # sum
@@ -226,18 +229,18 @@ class Model():
 
             # Z-domain (for discrete-time domain model)
             poles = -np.log(sr) / self.sampling_time
-            # poles = poles_correction(_poles, self.freq[1]-self.freq[0])
 
-            _t = companion(np.append(a0an1, 1)[::-1])
-            _v, _w = np.linalg.eig(_t)
-            self.partfactors.append(_w[-1, :])
+            if self.get_participation_factors:
+                _t = companion(np.append(a0an1, 1)[::-1])
+                _v, _w = np.linalg.eig(_t)
+                self.partfactors.append(_w[-1, :])
 
             f_pole, ceta = complex_freq_to_freq_and_damp(poles)
 
             self.all_poles.append(poles)
             self.pole_freq.append(f_pole)
             self.pole_xi.append(ceta)
-
+        
     def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=True, latex_render=False, title=None):
         """
         Render stability chart.
