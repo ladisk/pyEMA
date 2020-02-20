@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from .tools import *
+from .pole_picking import SelectPoles
 
 class Model():
     """
@@ -240,7 +241,10 @@ class Model():
             self.all_poles.append(poles)
             self.pole_freq.append(f_pole)
             self.pole_xi.append(ceta)
-        
+
+    def select_poles(self):
+        _ = SelectPoles(self)
+
     def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=True, latex_render=False, title=None):
         """
         Render stability chart.
