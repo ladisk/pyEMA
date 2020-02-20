@@ -530,51 +530,36 @@ class Model():
         _FRF_mat = self.frf[:, lower_ind:upper_ind]
         ome = 2 * np.pi * _freq
         M_2 = len(poles)
-        TA = np.ones([len(ome), M_2*2+4])
+        
+        def TA_construction(TA_omega):
+            len_ome = len(TA_omega)
+            if TA_omega[0]==0: TA_omega[0] = 1.e-2
+            _ome = TA_omega[:,np.newaxis]
+            # Initialization
+            TA = np.zeros([2*len_ome, M_2*2+4])
+            # Eigenmodes contribution
+            TA[:len_ome,0:2*M_2:2] =    (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                        (-np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+            TA[len_ome:,0:2*M_2:2] =    (-(_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                        (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+            TA[:len_ome,1:2*M_2+1:2] =  ((_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                        (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+            TA[len_ome:,1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                        (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+            # Lower and upper residuals contribution
+            TA[:len_ome,-4] = -1/(TA_omega**2)
+            TA[len_ome:,-3] = -1/(TA_omega**2)
+            TA[:len_ome,-2] = np.ones(len_ome)
+            TA[len_ome:,-1] = np.ones(len_ome)
+            return(TA)
 
-        # Real
-        for n in range(M_2):
-            TA[:, n] = np.real(1/(1j*ome-poles[n])+1 /
-                               (1j*ome-np.conj(poles[n])))
-
-        # Imag
-        for n in range(M_2):
-            if complex_mode:
-                TA[:, M_2 + n] = np.imag(1/(1j*ome-poles[n]) -
-                                         1/(1j*ome-np.conj(poles[n])))
-            else:
-                TA[:, M_2 + n] = 0
-
-        # Upper & Lower
-        for i in range(len(ome)):
-            if ome[i] == 0:
-                _ome = 0.01
-            else:
-                _ome = ome[i]
-            if lower_r:
-                TA[i, -4] = -np.real(1/(_ome)**2)
-                TA[i, -3] = -np.imag(1/(_ome)**2)
-            else:
-                TA[i, -4] = 0
-                TA[i, -3] = 0
-
-        if upper_r:
-            TA[:, -2] = np.real(np.ones_like(ome))
-            TA[:, -1] = np.imag(np.ones_like(ome))
-        else:
-            TA[:, -2] = 0
-            TA[:, -1] = 0
-
-        AT = np.linalg.pinv(TA.T@TA)@TA.T
-        IO = self.frf.shape[0]
-        A_LSFD = np.zeros([IO, 2*M_2+4])
-
-        for v in range(IO):
-            A_LSFD[v, :] = AT@_FRF_mat[v, :]
-
-        self.A = -(A_LSFD[:, :M_2] + 1j*A_LSFD[:, M_2:-4])
-        self.LR = A_LSFD[:, -4]+1j*A_LSFD[:, -3]
-        self.UR = A_LSFD[:, -2]+1j*A_LSFD[:, -1]
+        AT = np.linalg.pinv(TA_construction(ome))
+        FRF_r_i = np.concatenate([np.real(_FRF_mat.T),np.imag(_FRF_mat.T)])
+        A_LSFD = AT@FRF_r_i      
+        
+        self.A = A_LSFD[0:2*M_2:2,:] + 1.j*A_LSFD[1:2*M_2+1:2,:] 
+        self.LR = A_LSFD[-4,:]+1.j*A_LSFD[-3,:]
+        self.UR = A_LSFD[-2,:]+1.j*A_LSFD[-1,:]
         self.poles = poles
 
         # FRF reconstruction
@@ -582,13 +567,10 @@ class Model():
             return self.A
 
         elif FRF_ind == 'all':
-            n = self.frf.shape[0]
-            frf_ = np.zeros((n, len(self.omega)), complex)
-            for i in range(n):
-                frf_[i] = self.FRF_reconstruct(i)
-
+            _FRF_r_i = TA_construction(self.omega)@A_LSFD
+            frf_ = (_FRF_r_i[:len(self.omega),:] + _FRF_r_i[len(self.omega):,:]*1.j).T
             self.H = frf_
-            return frf_, self.A
+            return frf_, self.A.T
 
         elif isinstance(FRF_ind, int):
             frf_ = self.FRF_reconstruct(FRF_ind)
