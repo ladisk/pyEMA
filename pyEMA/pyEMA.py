@@ -603,6 +603,33 @@ class Model():
             (self.omega**2) + self.UR[FRF_ind]
         return FRF_true
 
+    def MAC(self, phi_X, phi_A):
+        """
+        Modal Assurance Criterion.
+
+        Literature:
+            [1] Maia, N. M. M., and J. M. M. Silva. 
+                "Modal analysis identification techniques." Philosophical
+                Transactions of the Royal Society of London. Series A: 
+                Mathematical, Physical and Engineering Sciences 359.1778 
+                (2001): 29-40. 
+
+        :phi_X: Mode shape matrix X
+        :phi_A: Mode shape matrix A
+        :return: MAC matrix
+        """
+        if phi_X.shape != phi_A.shape:
+            raise Exception('Mode shape matrices must be of the same dimension.')
+        modes = phi_X.shape[0]
+        MAC = np.abs(np.conj(phi_X) @ phi_A.T)**2
+        for i in range(modes):
+            for j in range(modes):
+                MAC[i, j] = MAC[i, j]/\
+                                (np.conj(phi_X[i,:]) @ phi_X[i,:] *\
+                                np.conj(phi_A[j,:]) @ phi_A[j,:])
+        return MAC      
+
+
     def print_modal_data(self):
         """
         Show modal data in a table-like structure.
