@@ -335,7 +335,7 @@ class Model():
             ax1.legend(loc='upper center', ncol=2, frameon=True)
         plt.tight_layout()
 
-        print('SHIFT + LEFT mouse button to pick a pole.\nRIGHT mouse button to erase the last pick.')
+        print('SHIFT + LEFT mouse button to pick a pole.\nSHIFT + RIGHT mouse button to erase the last pick.')
         self.nat_freq = []
         self.nat_xi = []
         self.pole_ind = []
