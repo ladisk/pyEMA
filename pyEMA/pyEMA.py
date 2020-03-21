@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from .tools import *
+from .tools import MAC
 from .pole_picking import SelectPoles
 
 class Model():
@@ -602,6 +603,17 @@ class Model():
         FRF_true += -self.LR[FRF_ind] / \
             (self.omega**2) + self.UR[FRF_ind]
         return FRF_true
+
+    def autoMAC(self):
+        """
+        Auto Modal Assurance Criterion.
+
+        :return: autoMAC matrix
+        """
+        if not hasattr(self, 'A'):
+            raise Exception('Mode shape matrix not defined.')
+        return MAC(self.A, self.A)
+
 
     def print_modal_data(self):
         """
