@@ -22,10 +22,14 @@ def test_1():
     np.testing.assert_almost_equal(acc.nat_freq[1], 476.75981357916606, decimal=5)
     
     H, A = acc.get_constants(whose_poles='own', FRF_ind='all')
-    assert A.shape[0]==6
-    assert A.shape[1]==2
-    assert H.shape[0]==6
-    assert H.shape[1]==999
+    assert A.shape[0] == 6
+    assert A.shape[1] == 2
+    assert acc.A.shape[0] == 6
+    assert acc.A.shape[1] == 2
+    assert H.shape[0] == 6
+    assert H.shape[1] == 999
+    assert acc.H.shape[0] == 6
+    assert acc.H.shape[1] == 999
 
 
 
