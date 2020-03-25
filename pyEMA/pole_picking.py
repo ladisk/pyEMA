@@ -14,6 +14,14 @@ from .tools import *
 class SelectPoles:
     def __init__(self, Model):
         """
+        Plot the measured Frequency Response Functions and computed poles.
+
+        Picking the poles is done with pressing the SHIFT key + left mouse button.
+        To unselect last pole: SHIFT + right mouse button.
+        To unselect closest pole: SHIFT + middle mouse button.
+
+        For more information check the HELP menu tab in the chart window.
+
         param model: object of pyEMA.Model
         """
         self.Model = Model
@@ -85,7 +93,13 @@ class SelectPoles:
 
 
     def plot_frf(self, initial=False):
-        
+        """Reconstruct and plot the Frequency Response Function.
+
+        This is done on the fly.
+
+        :param initial: if True, the frf is not computed, only the measured
+            FRFs are shown.
+        """
         self.ax2.clear()
         if self.frf_plot_type == 'abs':
             self.ax2.semilogy(self.Model.freq, np.average(
@@ -106,6 +120,11 @@ class SelectPoles:
     
 
     def get_stability(self, fn_temp=0.001, xi_temp=0.05):
+        """Get the stability matrix.
+        
+        :param fn_temp: Natural frequency stability crieterion.
+        :param xi_temp: Damping stability criterion.
+        """
         Nmax = self.Model.pol_order_high
         self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = stabilisation(
             self.Model.all_poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
@@ -161,6 +180,10 @@ class SelectPoles:
 
 
     def plot_cluster(self, update_ticks=False):
+        """Plot clusters - damping with respect to frequency.
+
+        :param update_ticks: if True, only ticks are updated, not the whole plot.
+        """
         b1 = np.argwhere(((self.test_fn > 0) & ((self.test_xi > 0) & (self.xi_temp > 0))) & ((self.fn_temp > self.Model.lower) & (self.fn_temp < self.Model.upper)))
         
         if not update_ticks:

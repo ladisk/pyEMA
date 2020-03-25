@@ -254,6 +254,13 @@ class Model():
         frequency and damping coefficients is executed on-the-fly,
         as well as computing reconstructed FRF and modal constants.
 
+        :param poles: poles to be shown on the plot. If 'all', all the poles are shown.
+        :param fn_temp: Natural frequency stability crieterion.
+        :param xi_temp: Damping stability criterion.
+        :param legen: wheather to show the legend
+        :param latex_render: if True, the latex render is used for fonts.
+        :param title: if given, the stabilization chart is saved under that title.
+
         The identification can be done in two ways:
         ::
             # 1. Using stability chart
@@ -480,11 +487,10 @@ class Model():
             sel_ind.append([f_sel[1], f_sel[0]])
 
         sel_ind = np.asarray(sel_ind, dtype=int)
-        pole_ind = np.asarray(pole_ind, dtype=int)
+        self.pole_ind = np.asarray(pole_ind, dtype=int)
 
         self.nat_freq = f_stable[sel_ind[:, 1], sel_ind[:, 0]]
         self.nat_xi = xi_stable[sel_ind[:, 1], sel_ind[:, 0]]
-        self.pole_ind = pole_ind
 
     def get_constants(self, method='lsfd', whose_poles='own', FRF_ind='all',
                       f_lower=None, f_upper=None, complex_mode=True, upper_r=True, lower_r=True, least_squares_type='new'):
@@ -538,33 +544,39 @@ class Model():
         
         def TA_construction(TA_omega):
             len_ome = len(TA_omega)
-            if TA_omega[0]==0: TA_omega[0] = 1.e-2
-            _ome = TA_omega[:,np.newaxis]
+            if TA_omega[0] == 0: 
+                TA_omega[0] = 1.e-2
+
+            _ome = TA_omega[:, np.newaxis]
+
             # Initialization
-            TA = np.zeros([2*len_ome, M_2*2+4])
+            TA = np.zeros([2*len_ome, 2*M_2 + 4])
+
             # Eigenmodes contribution
-            TA[:len_ome,0:2*M_2:2] =    (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+            TA[:len_ome, 0:2*M_2:2] =    (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
                                         (-np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            TA[len_ome:,0:2*M_2:2] =    (-(_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+            TA[len_ome:, 0:2*M_2:2] =    (-(_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
                                         (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            TA[:len_ome,1:2*M_2+1:2] =  ((_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+            TA[:len_ome, 1:2*M_2+1:2] =  ((_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
                                         (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            TA[len_ome:,1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+            TA[len_ome:, 1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
                                         (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+            
             # Lower and upper residuals contribution
-            TA[:len_ome,-4] = -1/(TA_omega**2)
-            TA[len_ome:,-3] = -1/(TA_omega**2)
-            TA[:len_ome,-2] = np.ones(len_ome)
-            TA[len_ome:,-1] = np.ones(len_ome)
-            return(TA)
+            TA[:len_ome, -4] = -1/(TA_omega**2)
+            TA[len_ome:, -3] = -1/(TA_omega**2)
+            TA[:len_ome, -2] = np.ones(len_ome)
+            TA[len_ome:, -1] = np.ones(len_ome)
+
+            return TA
 
         AT = np.linalg.pinv(TA_construction(ome))
         FRF_r_i = np.concatenate([np.real(_FRF_mat.T),np.imag(_FRF_mat.T)])
-        A_LSFD = AT@FRF_r_i      
+        A_LSFD = AT @ FRF_r_i      
         
-        self.A = A_LSFD[0:2*M_2:2,:] + 1.j*A_LSFD[1:2*M_2+1:2,:] 
-        self.LR = A_LSFD[-4,:]+1.j*A_LSFD[-3,:]
-        self.UR = A_LSFD[-2,:]+1.j*A_LSFD[-1,:]
+        self.A = (A_LSFD[0:2*M_2:2, :] + 1.j*A_LSFD[1:2*M_2+1:2, :]).T
+        self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
+        self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
         self.poles = poles
 
         # FRF reconstruction
@@ -575,10 +587,10 @@ class Model():
             _FRF_r_i = TA_construction(self.omega)@A_LSFD
             frf_ = (_FRF_r_i[:len(self.omega),:] + _FRF_r_i[len(self.omega):,:]*1.j).T
             self.H = frf_
-            return frf_, self.A.T
+            return frf_, self.A
 
         elif isinstance(FRF_ind, int):
-            frf_ = self.FRF_reconstruct(FRF_ind)
+            frf_ = self.FRF_reconstruct(FRF_ind)[None, :]
             self.H = frf_
             return frf_, self.A
 
@@ -613,7 +625,6 @@ class Model():
         if not hasattr(self, 'A'):
             raise Exception('Mode shape matrix not defined.')
         return MAC(self.A, self.A)
-
 
     def print_modal_data(self):
         """
