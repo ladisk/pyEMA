@@ -13,8 +13,7 @@ from matplotlib.figure import Figure
 import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
-from .tools import *
-from .tools import MAC
+from . import tools
 from .pole_picking import SelectPoles
 
 class Model():
@@ -203,8 +202,8 @@ class Model():
         indices_s = np.arange(-n, n+1)
         indices_t = np.arange(n+1)
 
-        sk = -irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
-        t = irfft_adjusted_lower_limit(
+        sk = -tools.irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
+        t = tools.irfft_adjusted_lower_limit(
             self.frf.real**2 + self.frf.imag**2, lower_ind, indices_t)
         r = -(np.fft.irfft(np.ones(lower_ind), n=nf))[indices_t]*nf
         r[0] += nf
@@ -237,7 +236,7 @@ class Model():
                 _v, _w = np.linalg.eig(_t)
                 self.partfactors.append(_w[-1, :])
 
-            f_pole, ceta = complex_freq_to_freq_and_damp(poles)
+            f_pole, ceta = tools.complex_freq_to_freq_and_damp(poles)
 
             self.all_poles.append(poles)
             self.pole_freq.append(f_pole)
@@ -295,7 +294,7 @@ class Model():
             ax1.set_ylim([0, self.pol_order_high+5])
 
         Nmax = self.pol_order_high
-        fn_temp, xi_temp, test_fn, test_xi = stabilisation(
+        fn_temp, xi_temp, test_fn, test_xi = tools.stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
         root = tk.Tk()  # Tkinter
@@ -443,7 +442,7 @@ class Model():
 
         Nmax = self.pol_order_high
         poles = self.all_poles
-        fn_temp, xi_temp, test_fn, test_xi = stabilisation(
+        fn_temp, xi_temp, test_fn, test_xi = tools.stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
         # select the stable poles
         b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0)))
@@ -624,7 +623,7 @@ class Model():
         """
         if not hasattr(self, 'A'):
             raise Exception('Mode shape matrix not defined.')
-        return MAC(self.A, self.A)
+        return tools.MAC(self.A, self.A)
 
     def print_modal_data(self):
         """

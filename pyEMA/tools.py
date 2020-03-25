@@ -142,11 +142,11 @@ def MAC(phi_X, phi_A):
     """
     if phi_X.shape != phi_A.shape:
         raise Exception('Mode shape matrices must be of the same dimension.')
-    modes = phi_X.shape[0]
-    MAC = np.abs(np.conj(phi_X) @ phi_A.T)**2
+    modes = phi_X.shape[1]
+    MAC = np.abs(np.conj(phi_X).T @ phi_A)**2
     for i in range(modes):
         for j in range(modes):
             MAC[i, j] = MAC[i, j]/\
-                            (np.conj(phi_X[i,:]) @ phi_X[i,:] *\
-                            np.conj(phi_A[j,:]) @ phi_A[j,:])
-    return MAC      
+                            (np.conj(phi_X[:, i]) @ phi_X[:, i] *\
+                            np.conj(phi_A[:, j]) @ phi_A[:, j])
+    return MAC
