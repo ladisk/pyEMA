@@ -8,7 +8,8 @@ import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
-from .tools import *
+from . import tools
+from . import ema_tools
 
 
 class SelectPoles:
@@ -126,7 +127,7 @@ class SelectPoles:
         :param xi_temp: Damping stability criterion.
         """
         Nmax = self.Model.pol_order_high
-        self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = stabilisation(
+        self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = ema_tools.stabilisation(
             self.Model.all_poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
 
@@ -174,6 +175,8 @@ class SelectPoles:
             self.selected.set_xdata([self.Model.pole_freq[p[0]][p[1]]
                                 for p in self.Model.pole_ind])  # update data
             self.selected.set_ydata([p[0] for p in self.Model.pole_ind])
+
+            plt.tight_layout()
 
         self.ax1.set_ylim([0, self.Model.pol_order_high+5])
         self.fig.canvas.draw()

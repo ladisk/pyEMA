@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from . import tools
+from . import ema_tools
 from .pole_picking import SelectPoles
 
 class Model():
@@ -202,8 +203,8 @@ class Model():
         indices_s = np.arange(-n, n+1)
         indices_t = np.arange(n+1)
 
-        sk = -tools.irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
-        t = tools.irfft_adjusted_lower_limit(
+        sk = -ema_tools.irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
+        t = ema_tools.irfft_adjusted_lower_limit(
             self.frf.real**2 + self.frf.imag**2, lower_ind, indices_t)
         r = -(np.fft.irfft(np.ones(lower_ind), n=nf))[indices_t]*nf
         r[0] += nf
@@ -294,7 +295,7 @@ class Model():
             ax1.set_ylim([0, self.pol_order_high+5])
 
         Nmax = self.pol_order_high
-        fn_temp, xi_temp, test_fn, test_xi = tools.stabilisation(
+        fn_temp, xi_temp, test_fn, test_xi = ema_tools.stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
         root = tk.Tk()  # Tkinter
@@ -442,7 +443,7 @@ class Model():
 
         Nmax = self.pol_order_high
         poles = self.all_poles
-        fn_temp, xi_temp, test_fn, test_xi = tools.stabilisation(
+        fn_temp, xi_temp, test_fn, test_xi = ema_tools.stabilisation(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
         # select the stable poles
         b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0)))
