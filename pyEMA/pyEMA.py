@@ -626,6 +626,25 @@ class Model():
             raise Exception('Mode shape matrix not defined.')
         return tools.MAC(self.A, self.A)
 
+    def normal_mode(self):
+        """Transform the complex mode shape matrix self.A to normal mode shape.
+        
+        The real mode shape should have the maximum correlation with
+        the original complex mode shape. The vector that is most correlated
+        with the complex mode, is the real part of the complex mode when it is
+        rotated so that the norm of its real part is maximized. [1]
+        
+        Literature:
+            [1] Gladwell, H. Ahmadian GML, and F. Ismail. 
+                "Extracting Real Modes from Complex Measured Modes."
+        
+        :return: normal mode shape
+        """
+        if not hasattr(self, 'A'):
+            raise Exception('Mode shape matrix not defined.')
+        
+        return tools.complex_to_normal_mode(self.A)
+
     def print_modal_data(self):
         """
         Show modal data in a table-like structure.
