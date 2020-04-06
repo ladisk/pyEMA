@@ -7,7 +7,6 @@ import pyEMA
 
 from test_data import *
 
-  
 def test_1():
     freq, H1_main = np.load("./data/acc_data.npy", allow_pickle=True)
     FRF = H1_main[:,1,:]
@@ -36,6 +35,7 @@ def test_1():
 
     assert np.allclose(complex_modes_true, acc.A)
     assert np.allclose(normal_modes_true, pyEMA.tools.complex_to_normal_mode(acc.A))
+    assert np.allclose(normal_modes_true, acc.normal_mode())
     assert np.allclose(mac_true, acc.autoMAC())
     
     

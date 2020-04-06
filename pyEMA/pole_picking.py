@@ -9,7 +9,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 
 from . import tools
-from . import ema_tools
+from . import helper
 
 
 class SelectPoles:
@@ -127,7 +127,7 @@ class SelectPoles:
         :param xi_temp: Damping stability criterion.
         """
         Nmax = self.Model.pol_order_high
-        self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = ema_tools.stabilisation(
+        self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = helper._stabilisation(
             self.Model.all_poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
 

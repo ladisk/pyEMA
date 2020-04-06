@@ -4,7 +4,7 @@ from tqdm import tqdm
 from . import tools
 
 
-def redundant_values(omega, xi, prec):
+def _redundant_values(omega, xi, prec):
     """
     This function supresses the redundant values of frequency and damping
     vectors, which are the consequence of conjugate values
@@ -31,7 +31,7 @@ def redundant_values(omega, xi, prec):
     return omega_mod, xi_mod
 
 
-def stabilisation(sr, nmax, err_fn, err_xi):
+def _stabilisation(sr, nmax, err_fn, err_xi):
     """
     A function that computes the stabilisation matrices needed for the
     stabilisation chart. The computation is focused on comparison of
@@ -58,7 +58,7 @@ def stabilisation(sr, nmax, err_fn, err_xi):
     for nr, n in enumerate(tqdm(range(nmax), ncols=100)):
         fn, xi = tools.complex_freq_to_freq_and_damp(sr[nr])
         # elimination of conjugate values in
-        fn, xi = redundant_values(fn, xi, 1e-3)
+        fn, xi = _redundant_values(fn, xi, 1e-3)
         # order to decrease computation time
         if n == 1:
             # first step
@@ -88,7 +88,7 @@ def stabilisation(sr, nmax, err_fn, err_xi):
     return fn_temp, xi_temp, test_fn, test_xi
 
 
-def irfft_adjusted_lower_limit(x, low_lim, indices):
+def _irfft_adjusted_lower_limit(x, low_lim, indices):
     """
     Compute the ifft of real matrix x with adjusted summation limits:
     ::
