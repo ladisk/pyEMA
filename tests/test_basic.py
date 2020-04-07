@@ -35,6 +35,7 @@ def test_1():
 
     assert np.allclose(complex_modes_true, acc.A)
     assert np.allclose(normal_modes_true, pyEMA.tools.complex_to_normal_mode(acc.A))
+    assert np.allclose(normal_modes_maxdof3_long, pyEMA.tools.complex_to_normal_mode(acc.A, max_dof=3, long=True))
     assert np.allclose(normal_modes_true, acc.normal_mode())
     assert np.allclose(mac_true, acc.autoMAC())
     
