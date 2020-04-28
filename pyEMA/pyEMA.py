@@ -13,9 +13,10 @@ from matplotlib.figure import Figure
 import warnings
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
-from . import tools
-from . import helper
 from .pole_picking import SelectPoles
+from . import tools
+from . import stabilization
+from . import normal_modes
 
 class Model():
     """
@@ -203,8 +204,8 @@ class Model():
         indices_s = np.arange(-n, n+1)
         indices_t = np.arange(n+1)
 
-        sk = -helper._irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
-        t = helper._irfft_adjusted_lower_limit(
+        sk = -_irfft_adjusted_lower_limit(self.frf, lower_ind, indices_s)
+        t = _irfft_adjusted_lower_limit(
             self.frf.real**2 + self.frf.imag**2, lower_ind, indices_t)
         r = -(np.fft.irfft(np.ones(lower_ind), n=nf))[indices_t]*nf
         r[0] += nf
@@ -295,7 +296,7 @@ class Model():
             ax1.set_ylim([0, self.pol_order_high+5])
 
         Nmax = self.pol_order_high
-        fn_temp, xi_temp, test_fn, test_xi = helper._stabilisation(
+        fn_temp, xi_temp, test_fn, test_xi = stabilization._stabilization(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
         root = tk.Tk()  # Tkinter
@@ -443,7 +444,7 @@ class Model():
 
         Nmax = self.pol_order_high
         poles = self.all_poles
-        fn_temp, xi_temp, test_fn, test_xi = helper._stabilisation(
+        fn_temp, xi_temp, test_fn, test_xi = stabilization._stabilization(
             poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
         # select the stable poles
         b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0)))
@@ -643,7 +644,7 @@ class Model():
         if not hasattr(self, 'A'):
             raise Exception('Mode shape matrix not defined.')
         
-        return tools.complex_to_normal_mode(self.A)
+        return normal_modes.complex_to_normal_mode(self.A)
 
     def print_modal_data(self):
         """
@@ -655,4 +656,24 @@ class Model():
             print(f'{i+1}) {f:6.1f}\t{self.nat_xi[i]:5.4f}')
 
 
+def _irfft_adjusted_lower_limit(x, low_lim, indices):
+    """
+    Compute the ifft of real matrix x with adjusted summation limits:
+    ::
+        y(j) = sum[k=-n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2, n-1] x[k] * exp(sqrt(-1)*j*k* 2*pi/n),
+        j =-n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
 
+    :param x: Single-sided real array to Fourier transform.
+    :param low_lim: lower limit index of the array x.
+    :param indices: list of indices of interest
+    :return: Fourier transformed two-sided array x with adjusted lower limit.
+             Retruns values.
+
+    Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/fft_tools.py
+    """
+
+    nf = 2 * (x.shape[1] - 1)
+    a = (np.fft.irfft(x, n=nf)[:, indices]) * nf
+    b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
+
+    return a - b

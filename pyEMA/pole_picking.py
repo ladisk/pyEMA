@@ -8,9 +8,7 @@ import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
-from . import tools
-from . import helper
-
+from . import stabilization
 
 class SelectPoles:
     def __init__(self, Model):
@@ -127,7 +125,7 @@ class SelectPoles:
         :param xi_temp: Damping stability criterion.
         """
         Nmax = self.Model.pol_order_high
-        self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = helper._stabilisation(
+        self.fn_temp, self.xi_temp, self.test_fn, self.test_xi = stabilization._stabilization(
             self.Model.all_poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
 
 

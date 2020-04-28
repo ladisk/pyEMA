@@ -3,7 +3,6 @@ from tqdm import tqdm
 
 from . import tools
 
-
 def _redundant_values(omega, xi, prec):
     """
     This function supresses the redundant values of frequency and damping
@@ -31,7 +30,7 @@ def _redundant_values(omega, xi, prec):
     return omega_mod, xi_mod
 
 
-def _stabilisation(sr, nmax, err_fn, err_xi):
+def _stabilization(sr, nmax, err_fn, err_xi):
     """
     A function that computes the stabilisation matrices needed for the
     stabilisation chart. The computation is focused on comparison of
@@ -87,26 +86,4 @@ def _stabilisation(sr, nmax, err_fn, err_xi):
 
     return fn_temp, xi_temp, test_fn, test_xi
 
-
-def _irfft_adjusted_lower_limit(x, low_lim, indices):
-    """
-    Compute the ifft of real matrix x with adjusted summation limits:
-    ::
-        y(j) = sum[k=-n-2, ... , -low_lim-1, low_lim, low_lim+1, ... n-2, n-1] x[k] * exp(sqrt(-1)*j*k* 2*pi/n),
-        j =-n-2, ..., -low_limit-1, low_limit, low_limit+1, ... n-2, n-1
-
-    :param x: Single-sided real array to Fourier transform.
-    :param low_lim: lower limit index of the array x.
-    :param indices: list of indices of interest
-    :return: Fourier transformed two-sided array x with adjusted lower limit.
-             Retruns values.
-
-    Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/fft_tools.py
-    """
-
-    nf = 2 * (x.shape[1] - 1)
-    a = (np.fft.irfft(x, n=nf)[:, indices]) * nf
-    b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
-
-    return a - b
 
