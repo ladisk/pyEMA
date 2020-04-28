@@ -1,14 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-desc = """\
-Experimental and operational modal analysis
-===========================================
-This module supports experimental and operational modal analysis. 
-
-For the showcase see: `https://github.com/ladisk/pyEMA/ <https://github.com/ladisk/pyEMA/blob/master/pyEMA%20Showcase.ipynb>`_
-
-Documentation is located here: `https://pyema.readthedocs.io/ <https://pyema.readthedocs.io/en/latest/>`_
-"""
 import os
 import re
 from setuptools import setup
@@ -41,6 +32,9 @@ def parse_requirements(filename):
 
 requirements = parse_requirements('requirements.txt')
 
+# Read the "README.rst" for project description
+with open('README.rst', 'r') as f:
+    readme = f.read()
 
 setup(name='pyEMA',
       version=version,
@@ -49,6 +43,6 @@ setup(name='pyEMA',
       description='Experimental and operational modal analysis.',
       url='https://github.com/ladisk/pyEMA',
       packages=['pyEMA'],
-      long_description=desc,
+      long_description=readme,
       install_requires=requirements
       )
