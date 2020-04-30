@@ -114,6 +114,17 @@ class SelectPoles:
             elif self.frf_plot_type == 'all':
                 self.ax2.semilogy(self.Model.freq, np.abs(self.H.T), color='r', lw=1)
         
+        else:
+            x_position = (self.Model.lower + self.Model.upper) / 2
+            y_position = np.max(np.abs(self.Model.frf))
+            message = [
+                'Select a pole: SHIFT + LEFT mouse button',
+                'Deselect a pole: SHIFT + RIGHT mouse button'
+            ]
+            self.ax2.text(x_position, y_position, '\n'.join(message), 
+                fontsize=12, verticalalignment='top', horizontalalignment='center',
+                bbox=dict(facecolor='lightgreen', edgecolor='lightgreen'))
+        
         self.ax1.set_xlim([self.Model.lower, self.Model.upper])
         self.fig.canvas.draw()
     
@@ -362,13 +373,18 @@ class SelectPoles:
 
 
     def show_help(self):
-        tk.messagebox.showinfo('Picking poles', """
-        Shift + left click = pick a pole\n
-        Shift + right click = deselect last pole\n
-        Shift + middle click = deselect closest pole (frequency wise)\n
-        Two different types of charts are currently avaliable:\n
-        - stability chart, where pole frequencies are plotted against polynomial order\n
-        - cluster diagram, where pole frequencies are plotted against damping ratios.""")
+        lines = [
+            'Pole selection help',
+            ' ',
+            '- Select a pole: SHIFT + LEFT mouse button',
+            '- Deselect a pole: SHIFT + RIGHT mouse button',
+            '- Deselect the closest pole (frequency wise): SHIFT + MIDDLE mouse button',
+            ' ',
+            '- Two different types of charts are currently avaliable:',
+            '  1. stability chart, where pole frequencies are plotted against polynomial order',
+            '  2. cluster diagram, where pole frequencies are plotted against damping ratios'
+        ]
+        tk.messagebox.showinfo('Picking poles', '\n'.join(lines))
 
 
     def save_this_figure(self):
