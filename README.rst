@@ -98,9 +98,16 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 
     H, A = c.get_constants(whose_poles=a, FRF_ind=‘all’) 
 
+|DOI|
 |Build Status|
 
 .. _documentation: https://pyema.readthedocs.io/en/latest/basic_usage.html
 
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4016671.svg?
+   :target: https://doi.org/10.5281/zenodo.4016671
+
 .. |Build Status| image:: https://travis-ci.com/ladisk/pyEMA.svg?branch=master
    :target: https://travis-ci.com/ladisk/pyEMA
+
+
+
