@@ -31,17 +31,32 @@ def MAC(phi_X, phi_A):
         or ``n_locations``.
     :param phi_A: Mode shape matrix A, shape: ``(n_locations, n_modes)``
         or ``n_locations``.
-    :return: MAC matrix
+    :return: MAC matrix. Returns MAC value if both ``phi_X`` and ``phi_A`` are
+        one-dimensional arrays.
     """
-    if phi_X.shape != phi_A.shape:
-        raise Exception('Mode shape matrices must be of the same dimension.')
-    modes = phi_X.shape[1]
+    if phi_X.ndim == 1:
+        phi_X = phi_X[:, np.newaxis]
+    
+    if phi_A.ndim == 1:
+        phi_A = phi_A[:, np.newaxis]
+    
+    if phi_X.ndim > 2 or phi_A.ndim > 2:
+        raise Exception(f'Mode shape matrices must have 1 or 2 dimensions (phi_X: {phi_X.ndim}, phi_A: {phi_A.ndim})')
+
+    if phi_X.shape[0] != phi_A.shape[0]:
+        raise Exception(f'Mode shapes must have the same first dimension (phi_X: {phi_X.shape[0]}, phi_A: {phi_A.shape[0]})')
+
     MAC = np.abs(np.conj(phi_X).T @ phi_A)**2
-    for i in range(modes):
-        for j in range(modes):
+    for i in range(phi_X.shape[1]):
+        for j in range(phi_A.shape[1]):
             MAC[i, j] = MAC[i, j]/\
                             (np.conj(phi_X[:, i]) @ phi_X[:, i] *\
                             np.conj(phi_A[:, j]) @ phi_A[:, j])
+
+    
+    if MAC.shape == (1, 1):
+        MAC = MAC[0, 0]
+
     return MAC
 
 
