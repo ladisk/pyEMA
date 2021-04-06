@@ -8,7 +8,7 @@ regexp = re.compile(r'.*__version__ = [\'\"](.*?)[\'\"]', re.S)
 
 base_path = os.path.dirname(__file__)
 
-init_file = os.path.join(base_path, 'pyEMA', '__init__.py')
+init_file = os.path.join(base_path, 'sdypy/EMA', '__init__.py')
 with open(init_file, 'r') as f:
     module_content = f.read()
 
@@ -36,13 +36,13 @@ requirements = parse_requirements('requirements.txt')
 with open('README.rst', 'r') as f:
     readme = f.read()
 
-setup(name='pyEMA',
+setup(name='sdypy-EMA',
       version=version,
       author='Klemen Zaletelj, Tomaž Bregar, Domen Gorjup, Janko Slavič',
       author_email='janko.slavic@fs.uni-lj.si, ladisk@gmail.com',
       description='Experimental and operational modal analysis.',
       url='https://github.com/ladisk/pyEMA',
-      packages=['pyEMA'],
+      packages=['sdypy.EMA'],
       long_description=readme,
       install_requires=requirements
       )

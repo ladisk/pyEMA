@@ -4,7 +4,7 @@ import sys, os
 my_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, my_path + '/../')
 
-import pyEMA
+from sdypy import EMA as pyEMA
 
 from test_data import *
 

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-import pyEMA
+from sdypy import EMA as pyEMA
 
 def test_MSF():
     eigvec_exp = np.random.rand(10, 4) + 1j*np.random.rand(10, 4)
