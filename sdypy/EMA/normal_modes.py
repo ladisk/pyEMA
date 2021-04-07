@@ -25,7 +25,7 @@ def complex_to_normal_mode(mode, max_dof=50, long=True):
         angles of rotation are averaged (more in ``_large_normal_mode_approx()``).
         This is needed only when ``max_dof`` is exceeded. The normal modes are 
         more closely related to the ones computed with an entire matrix. Defaults to True.
-    :return: normal mode shape
+    :return: normal mode-shape
     """
     if mode.ndim == 1:
         mode = mode[None, :, None]

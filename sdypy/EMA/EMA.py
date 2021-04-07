@@ -245,10 +245,34 @@ class Model():
             self.pole_xi.append(ceta)
 
     def select_poles(self):
+        """Select stable poles from stability chart.
+        
+        Interactive pole selection is possible. Identification of natural 
+        frequency and damping coefficients is executed on-the-fly,
+        as well as computing reconstructed FRF and modal constants.
+
+        The identification can be done in two ways:
+        ::
+            # 1. Using stability chart
+            >>> a.stab_chart() # pick poles
+            >>> a.nat_freq # natural frequencies
+            >>> a.nat_xi # damping coefficients
+            >>> a.H # reconstructed FRF matrix
+            >>> a.A # modal constants (a.A[:, -2:] are Lower and Upper residual)
+
+            # 2. Using approximate natural frequencies
+            >>> approx_nat_freq = [234, 545]
+            >>> a.select_closest_poles(approx_nat_freq)
+            >>> a.nat_freq # natural frequencies
+            >>> a.nat_xi # damping coefficients
+            >>> H, A = a.get_constants(whose_poles='own', FRF_ind='all) # reconstruction
+        """
         _ = SelectPoles(self)
 
     def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=True, latex_render=False, title=None):
         """
+        This method is deprecated. Please use ``select_poles()`` instead.
+
         Render stability chart.
 
         Interactive pole selection is possible. Identification of natural 
@@ -278,6 +302,8 @@ class Model():
             >>> a.nat_xi # damping coefficients
             >>> H, A = a.get_constants(whose_poles='own', FRF_ind='all) # reconstruction
         """
+        warnings.warn('`stab_chart()` method is deprecated. Please use the `select_poles()` method.')
+
         if poles == 'all':
             poles = self.all_poles
 
