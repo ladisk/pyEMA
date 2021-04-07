@@ -7,11 +7,25 @@ def complex_freq_to_freq_and_damp(sr):
     Convert the complex natural frequencies to natural frequencies and the
     corresponding dampings.
 
+    A complex natural frequency is defined:
+    
+    .. math::
+
+        \\lambda_r = -\\zeta\\,\\omega_r \\pm \\mathrm{i}\\,\\omega_r\\,\\sqrt{1-\\zeta^2},
+    
+    where :math:`\\lambda_r` is the :math:`r` th complex natural frequency and :math:`\\omega_r`
+    and :math:`\\zeta_r` are the :math:`r` th natural frequency [rad/s] and damping, respectively.
+
     :param sr: complex natural frequencies
-    :return: natural frequency and damping
+    :return: natural frequency [Hz] and damping
     """
+    # Extract natural frequency
     fr = np.sign(np.imag(sr)) * np.abs(sr)
+    
+    # Extract damping
     xir = -sr.real/fr
+    
+    # Convert natural frequency to Hz
     fr /= (2 * np.pi)
 
     return fr, xir
@@ -19,6 +33,9 @@ def complex_freq_to_freq_and_damp(sr):
 
 def MAC(phi_X, phi_A):
     """Modal Assurance Criterion.
+
+    The number of locations (axis 0) must be the same for ``phi_X`` and
+    ``phi_A``. The nubmer of modes (axis 1) is arbitrary.
 
     Literature:
         [1] Maia, N. M. M., and J. M. M. Silva. 
@@ -65,7 +82,7 @@ def MSF(phi_X, phi_A):
 
     If ``phi_X`` and ``phi_A`` are matrices, multiple msf are returned.
 
-    Scales ``phi_X`` to ``phi_A`` when multiplying: ``msf*phi_X``. 
+    The MAF scales ``phi_X`` to ``phi_A`` when multiplying: ``msf*phi_X``. 
     Also takes care of 180 deg phase difference.
 
     :param phi_X: Mode shape matrix X, shape: ``(n_locations, n_modes)``
