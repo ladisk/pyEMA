@@ -5,14 +5,6 @@ Experimental and operational modal analysis
 
 Check out the `documentation`_.
 
-New in pyEMA 0.23
------------------
-* Normal modes computation
-* MAC and auto MAC matrix computation
-* Extended pole picking functionallity
-    * Cluster diagram
-    * Selection of FRF display
-
 Basic usage
 -----------
 
