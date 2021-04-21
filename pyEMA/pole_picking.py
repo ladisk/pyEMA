@@ -76,7 +76,7 @@ class SelectPoles:
         self.get_stability()
         self.plot_stability()
 
-        # Integrate matplotib figure
+        # Integrate matplotlib figure
         canvas = FigureCanvasTkAgg(self.fig, self.root)
         canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
         NavigationToolbar2Tk(canvas, self.root)
@@ -132,7 +132,7 @@ class SelectPoles:
     def get_stability(self, fn_temp=0.001, xi_temp=0.05):
         """Get the stability matrix.
         
-        :param fn_temp: Natural frequency stability crieterion.
+        :param fn_temp: Natural frequency stability criterion.
         :param xi_temp: Damping stability criterion.
         """
         Nmax = self.Model.pol_order_high
@@ -145,13 +145,13 @@ class SelectPoles:
             self.ax1.clear()
             self.ax1.grid(True)
 
-            # stable eigenfrequencues, unstable damping ratios
+            # stable eigenfrequencies, unstable damping ratios
             a = np.argwhere((self.test_fn > 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
             # stable eigenfrequencies, stable damping ratios
             b = np.argwhere((self.test_fn > 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
-            # unstable eigenfrequencues, unstable damping ratios
+            # unstable eigenfrequencies, unstable damping ratios
             c = np.argwhere((self.test_fn == 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
-            # unstable eigenfrequencues, stable damping ratios
+            # unstable eigenfrequencies, stable damping ratios
             d = np.argwhere((self.test_fn == 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
 
             p1 = self.ax1.plot(self.fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx',
@@ -202,13 +202,13 @@ class SelectPoles:
             self.ax1.clear()
             self.ax1.grid(True)
 
-            # stable eigenfrequencues, unstable damping ratios
+            # stable eigenfrequencies, unstable damping ratios
             a = np.argwhere((self.test_fn > 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
             # stable eigenfrequencies, stable damping ratios
             b = np.argwhere((self.test_fn > 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
-            # unstable eigenfrequencues, unstable damping ratios
+            # unstable eigenfrequencies, unstable damping ratios
             c = np.argwhere((self.test_fn == 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
-            # unstable eigenfrequencues, stable damping ratios
+            # unstable eigenfrequencies, stable damping ratios
             d = np.argwhere((self.test_fn == 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
 
             p1 = self.ax1.plot(self.fn_temp[a[:, 0], a[:, 1]], self.xi_temp[a[:, 0], a[:, 1]], 'bx',
@@ -270,7 +270,7 @@ class SelectPoles:
                 min_.append([y_ind, sel, np.abs(self.Model.pole_freq[y_ind][sel]-self.x_data_pole), np.abs(self.Model.pole_xi[y_ind][sel]-self.y_data_pole[0])])
 
         min_a = np.asarray(min_)
-        # select the poles that have the frequency within 2% of observed range
+        # select the poles that have a frequency within 2% of the observed range
         mask = min_a[:, 2] < (self.Model.upper - self.Model.lower) * 0.02
         min_ind_x = np.argmin(min_a[mask][:, 3])
         
@@ -284,7 +284,7 @@ class SelectPoles:
     
 
     def on_click(self, event):
-        # on button 1 press (left mouse button) + shift is held
+        # on button 1 press (left mouse button) + SHIFT is held
         if event.button == 1 and self.shift_is_held:
             self.y_data_pole = [event.ydata]
             self.x_data_pole = event.xdata
@@ -324,13 +324,13 @@ class SelectPoles:
 
 
     def on_key_press(self, event):
-        """Function triggered on key press (shift)."""
+        """Function triggered on key press (SHIFT)."""
         if event.key == 'shift':
             self.shift_is_held = True
     
 
     def on_key_release(self, event):
-        """Function triggered on key release (shift)."""
+        """Function triggered on key release (SHIFT)."""
         if event.key == 'shift':
             self.shift_is_held = False
     

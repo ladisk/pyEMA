@@ -49,12 +49,12 @@ class Model():
         except:
             raise Exception('lower must be float or integer')
         if self.lower < 0:
-            raise Exception('lower must be positive or equal to zero')
+            raise Exception('lower must be more than or equal to zero')
 
         try:
             self.upper = float(upper)
         except:
-            raise Exception('upper must be flaot or integer')
+            raise Exception('upper must be float or integer')
         if self.upper < self.lower:
             raise Exception('upper must be greater than lower')
 
@@ -64,7 +64,7 @@ class Model():
             try:
                 self.frf = np.asarray(frf)
             except:
-                raise Exception('cannot contert frf to numpy ndarray')
+                raise Exception('cannot convert frf to numpy ndarray')
             if self.frf.ndim == 1:
                 self.frf = np.array([self.frf])
 
@@ -88,7 +88,7 @@ class Model():
         except:
             raise Exception('cannot convert pol_order_high to integer')
         if self.pol_order_high <= 0:
-            raise Exception('pol_order_high must be positive')
+            raise Exception('pol_order_high must be more than zero')
 
         if not pyfrf:
             self.omega = 2 * np.pi * self.freq
@@ -101,7 +101,7 @@ class Model():
 
     def add_frf(self, pyfrf_object):
         """
-        Add a FRF at a next location.
+        Add an FRF at a next location.
 
         This method can be used in relation to pyFRF from Open Modal (https://github.com/openmodal)
 
@@ -128,7 +128,7 @@ class Model():
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
 
         The LSCF method is an frequency-domain Linear Least Squares
-        estimator optimized  for modal parameter estimation. The choice of
+        estimator optimized for modal parameter estimation. The choice of
         the most important algorithm characteristics is based on the
         results in [1] (Section 5.3.3.) and can be summarized as:
 
@@ -184,7 +184,7 @@ class Model():
         """
         if method != 'lscf':
             raise Exception(
-                f'no method "{method}". Currently only "lscf" method is implemented.')
+                f'no method "{method}". Currently only the "lscf" method is implemented.')
 
         if show_progress:
             def tqdm_range(x): return tqdm(x, ncols=100)
