@@ -83,7 +83,7 @@ class Model():
             try:
                 self.frf = np.asarray(frf)
             except:
-                raise Exception('cannot convert frf to a numpy ndarray')
+                raise Exception('cannot convert frf to numpy ndarray')
             if self.frf.ndim == 1:
                 self.frf = np.array([self.frf])
 
