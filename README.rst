@@ -54,7 +54,7 @@ or use the new function that also contains the stability chart and more:
     a.select_poles()
 
 The stability chart displayes calculated poles and the user can hand-pick the stable ones. Reconstruction is done on-the-fly. 
-In this case the reconstruction is not necessary since the user can access FRF matrix and modal constant matrix:
+In this case the reconstruction is not necessary since the user can access the FRF matrix and modal constant matrix:
 
 ::
 
