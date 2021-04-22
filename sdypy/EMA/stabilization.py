@@ -37,7 +37,7 @@ def _stabilization(sr, nmax, err_fn, err_xi):
     eigenfrequencies and damping ratios in the present step 
     (N-th model order) with the previous step ((N-1)-th model order). 
 
-    :param sr: list of lists of complex natrual frequencies
+    :param sr: list of lists of complex natural frequencies
     :param n: maximum number of degrees of freedom
     :param err_fn: relative error in frequency
     :param err_xi: relative error in damping
