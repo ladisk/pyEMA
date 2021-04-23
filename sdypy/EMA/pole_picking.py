@@ -15,9 +15,9 @@ class SelectPoles:
         """
         Plot the measured Frequency Response Functions and computed poles.
 
-        Picking the poles is done with pressing the SHIFT key + left mouse button.
-        To unselect last pole: SHIFT + right mouse button.
-        To unselect closest pole: SHIFT + middle mouse button.
+        Picking the poles is done by pressing the SHIFT key + left mouse button.
+        To unselect last pole: press SHIFT + right mouse button.
+        To unselect closest pole: press SHIFT + middle mouse button.
 
         For more information check the HELP menu tab in the chart window.
 
@@ -76,7 +76,7 @@ class SelectPoles:
         self.get_stability()
         self.plot_stability()
 
-        # Integrate matplotib figure
+        # Integrate matplotlib figure
         canvas = FigureCanvasTkAgg(self.fig, self.root)
         canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
         NavigationToolbar2Tk(canvas, self.root)
@@ -96,7 +96,7 @@ class SelectPoles:
 
         This is done on the fly.
 
-        :param initial: if True, the frf is not computed, only the measured
+        :param initial: if True, the FRF is not computed, only the measured
             FRFs are shown.
         """
         self.ax2.clear()
@@ -119,7 +119,7 @@ class SelectPoles:
             y_position = np.max(np.abs(self.Model.frf))
             message = [
                 'Select a pole: SHIFT + LEFT mouse button',
-                'Deselect a pole: SHIFT + RIGHT mouse button'
+                'Unselect a pole: SHIFT + RIGHT mouse button'
             ]
             self.ax2.text(x_position, y_position, '\n'.join(message), 
                 fontsize=12, verticalalignment='top', horizontalalignment='center',
@@ -132,7 +132,7 @@ class SelectPoles:
     def get_stability(self, fn_temp=0.001, xi_temp=0.05):
         """Get the stability matrix.
         
-        :param fn_temp: Natural frequency stability crieterion.
+        :param fn_temp: Natural frequency stability criterion.
         :param xi_temp: Damping stability criterion.
         """
         Nmax = self.Model.pol_order_high
@@ -145,13 +145,13 @@ class SelectPoles:
             self.ax1.clear()
             self.ax1.grid(True)
 
-            # stable eigenfrequencues, unstable damping ratios
+            # stable eigenfrequencies, unstable damping ratios
             a = np.argwhere((self.test_fn > 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
             # stable eigenfrequencies, stable damping ratios
             b = np.argwhere((self.test_fn > 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
-            # unstable eigenfrequencues, unstable damping ratios
+            # unstable eigenfrequencies, unstable damping ratios
             c = np.argwhere((self.test_fn == 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
-            # unstable eigenfrequencues, stable damping ratios
+            # unstable eigenfrequencies, stable damping ratios
             d = np.argwhere((self.test_fn == 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
 
             p1 = self.ax1.plot(self.fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx',
@@ -202,13 +202,13 @@ class SelectPoles:
             self.ax1.clear()
             self.ax1.grid(True)
 
-            # stable eigenfrequencues, unstable damping ratios
+            # stable eigenfrequencies, unstable damping ratios
             a = np.argwhere((self.test_fn > 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
             # stable eigenfrequencies, stable damping ratios
             b = np.argwhere((self.test_fn > 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
-            # unstable eigenfrequencues, unstable damping ratios
+            # unstable eigenfrequencies, unstable damping ratios
             c = np.argwhere((self.test_fn == 0) & ((self.test_xi == 0) | (self.xi_temp <= 0)))
-            # unstable eigenfrequencues, stable damping ratios
+            # unstable eigenfrequencies, stable damping ratios
             d = np.argwhere((self.test_fn == 0) & ((self.test_xi > 0) & (self.xi_temp > 0)))
 
             p1 = self.ax1.plot(self.fn_temp[a[:, 0], a[:, 1]], self.xi_temp[a[:, 0], a[:, 1]], 'bx',
@@ -270,7 +270,7 @@ class SelectPoles:
                 min_.append([y_ind, sel, np.abs(self.Model.pole_freq[y_ind][sel]-self.x_data_pole), np.abs(self.Model.pole_xi[y_ind][sel]-self.y_data_pole[0])])
 
         min_a = np.asarray(min_)
-        # select the poles that have the frequency within 2% of observed range
+        # select the poles that have a frequency within 2% of the observed range
         mask = min_a[:, 2] < (self.Model.upper - self.Model.lower) * 0.02
         min_ind_x = np.argmin(min_a[mask][:, 3])
         
@@ -284,7 +284,7 @@ class SelectPoles:
     
 
     def on_click(self, event):
-        # on button 1 press (left mouse button) + shift is held
+        # on button 1 press (left mouse button) + SHIFT is held
         if event.button == 1 and self.shift_is_held:
             self.y_data_pole = [event.ydata]
             self.x_data_pole = event.xdata
@@ -324,13 +324,13 @@ class SelectPoles:
 
 
     def on_key_press(self, event):
-        """Function triggered on key press (shift)."""
+        """Function triggered on key press (SHIFT)."""
         if event.key == 'shift':
             self.shift_is_held = True
     
 
     def on_key_release(self, event):
-        """Function triggered on key release (shift)."""
+        """Function triggered on key release (SHIFT)."""
         if event.key == 'shift':
             self.shift_is_held = False
     
@@ -377,11 +377,11 @@ class SelectPoles:
             'Pole selection help',
             ' ',
             '- Select a pole: SHIFT + LEFT mouse button',
-            '- Deselect a pole: SHIFT + RIGHT mouse button',
-            '- Deselect the closest pole (frequency wise): SHIFT + MIDDLE mouse button',
+            '- Unselect a pole: SHIFT + RIGHT mouse button',
+            '- Unselect the closest pole (frequency wise): SHIFT + MIDDLE mouse button',
             ' ',
             '- Two different types of charts are currently avaliable:',
-            '  1. stability chart, where pole frequencies are plotted against polynomial order',
+            '  1. stability chart, where pole frequencies are plotted against polynomial orders',
             '  2. cluster diagram, where pole frequencies are plotted against damping ratios'
         ]
         tk.messagebox.showinfo('Picking poles', '\n'.join(lines))

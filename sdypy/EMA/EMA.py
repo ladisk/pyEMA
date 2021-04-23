@@ -49,12 +49,12 @@ class Model():
         except:
             raise Exception('lower must be float or integer')
         if self.lower < 0:
-            raise Exception('lower must be positive or equal to zero')
+            raise Exception('lower must be more than or equal to zero')
 
         try:
             self.upper = float(upper)
         except:
-            raise Exception('upper must be flaot or integer')
+            raise Exception('upper must be float or integer')
         if self.upper < self.lower:
             raise Exception('upper must be greater than lower')
 
@@ -64,14 +64,14 @@ class Model():
             try:
                 self.frf = np.asarray(frf)
             except:
-                raise Exception('cannot contert frf to numpy ndarray')
+                raise Exception('cannot convert frf to a numpy ndarray')
             if self.frf.ndim == 1:
                 self.frf = np.array([self.frf])
 
             try:
                 self.freq = np.asarray(freq)
             except:
-                raise Exception('cannot convert freq to numpy array')
+                raise Exception('cannot convert freq to a numpy array')
             if self.freq.ndim != 1:
                 raise Exception(
                     f'ndim of freq is not equal to 1 ({self.freq.ndim})')
@@ -86,9 +86,9 @@ class Model():
         try:
             self.pol_order_high = int(pol_order_high)
         except:
-            raise Exception('cannot convert pol_order_high to integer')
+            raise Exception('cannot convert pol_order_high to an integer')
         if self.pol_order_high <= 0:
-            raise Exception('pol_order_high must be positive')
+            raise Exception('pol_order_high must be more than zero')
 
         if not pyfrf:
             self.omega = 2 * np.pi * self.freq
@@ -101,7 +101,7 @@ class Model():
 
     def add_frf(self, pyfrf_object):
         """
-        Add a FRF at a next location.
+        Add an FRF at the next location.
 
         This method can be used in relation to pyFRF from Open Modal (https://github.com/openmodal)
 
@@ -128,7 +128,7 @@ class Model():
         Source: https://github.com/openmodal/OpenModal/blob/master/OpenModal/analysis/lscf.py
 
         The LSCF method is an frequency-domain Linear Least Squares
-        estimator optimized  for modal parameter estimation. The choice of
+        estimator optimized for modal parameter estimation. The choice of
         the most important algorithm characteristics is based on the
         results in [1] (Section 5.3.3.) and can be summarized as:
 
@@ -184,7 +184,7 @@ class Model():
         """
         if method != 'lscf':
             raise Exception(
-                f'no method "{method}". Currently only "lscf" method is implemented.')
+                f'no method "{method}". Currently only the "lscf" method is implemented.')
 
         if show_progress:
             def tqdm_range(x): return tqdm(x, ncols=100)
@@ -216,7 +216,7 @@ class Model():
         t = toeplitz(np.sum(t[:, :n+1], axis=0))
         r = toeplitz(r)
 
-        # Ascending polinomial order pole computation
+        # Ascending polynomial order pole computation
         for j in tqdm_range(range(2, n+1, 2)):
             d = 0
             rinv = np.linalg.inv(r[:j+1, :j+1])
@@ -245,15 +245,15 @@ class Model():
             self.pole_xi.append(ceta)
 
     def select_poles(self):
-        """Select stable poles from stability chart.
+        """Select stable poles from the stability chart.
         
         Interactive pole selection is possible. Identification of natural 
         frequency and damping coefficients is executed on-the-fly,
-        as well as computing reconstructed FRF and modal constants.
+        as well as computing the reconstructed FRF and modal constants.
 
         The identification can be done in two ways:
         ::
-            # 1. Using stability chart
+            # 1. Using the stability chart
             >>> a.stab_chart() # pick poles
             >>> a.nat_freq # natural frequencies
             >>> a.nat_xi # damping coefficients
@@ -277,7 +277,7 @@ class Model():
 
         Interactive pole selection is possible. Identification of natural 
         frequency and damping coefficients is executed on-the-fly,
-        as well as computing reconstructed FRF and modal constants.
+        as well as computing the reconstructed FRF and modal constants.
 
         :param poles: poles to be shown on the plot. If 'all', all the poles are shown.
         :param fn_temp: Natural frequency stability crieterion.
@@ -370,7 +370,7 @@ class Model():
             ax1.legend(loc='upper center', ncol=2, frameon=True)
         plt.tight_layout()
 
-        print('SHIFT + LEFT mouse button to pick a pole.\nSHIFT + RIGHT mouse button to erase the last pick.')
+        print('SHIFT + LEFT mouse button to select a pole.\nSHIFT + RIGHT mouse button to unselect the last pick.')
         self.nat_freq = []
         self.nat_xi = []
         self.pole_ind = []
@@ -384,17 +384,17 @@ class Model():
         self.shift_is_held = False
 
         def on_key_press(event):
-            """Function triggered on key press (shift)."""
+            """Function triggered on key press (SHIFT)."""
             if event.key == 'shift':
                 self.shift_is_held = True
 
         def on_key_release(event):
-            """Function triggered on key release (shift)."""
+            """Function triggered on key release (SHIFT)."""
             if event.key == 'shift':
                 self.shift_is_held = False
 
         def onclick(event):
-            # on button 1 press (left mouse button) + shift is held
+            # on button 1 press (left mouse button) + SHIFT is held
             if event.button == 1 and self.shift_is_held:
                 self.y_data_pole = [event.ydata]
                 self.x_data_pole = event.xdata
@@ -412,7 +412,7 @@ class Model():
                     del self.nat_xi[-1]
                     del self.pole_ind[-1]
                     replot()
-                    print('Deleting the last pick...')
+                    print('Unselecting the last pick...')
                 except:
                     pass
 
@@ -542,7 +542,7 @@ class Model():
         """
         if method != 'lsfd':
             raise Exception(
-                f'no method "{method}". Currently only "lsfd" method is implemented.')
+                f'no method "{method}". Currently only the "lsfd" method is implemented.')
 
         if whose_poles == 'own':
             whose_poles = self
