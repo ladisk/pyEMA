@@ -91,3 +91,17 @@ def MSF(phi_X, phi_A):
         msf.append(_msf)
 
     return np.array(msf).real
+
+def MCF(phi_X):
+    """ Modal complexity factor """
+    if phi_X.ndim == 1:
+        phi_X = phi_X[:, None]    
+    n_modes = phi_X.shape[1]
+    mcf = []
+    for i in range(n_modes):
+        S_xx = np.dot(phi_X[:, i].real, phi_X[:, i].real)
+        S_yy = np.dot(phi_X[:, i].imag, phi_X[:, i].imag)
+        S_xy = np.dot(phi_X[:, i].real, phi_X[:, i].imag)
+        _mcf = 1 - ((S_xx-S_yy)**2+4*S_xy**2)/(S_xx+S_yy)**2
+        mcf.append(_mcf)
+    return np.array(mcf)    
