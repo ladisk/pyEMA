@@ -6,11 +6,17 @@ from tqdm import tqdm
 from scipy.linalg import toeplitz, companion
 from scipy.optimize import least_squares, leastsq
 
-import tkinter as tk
+import warnings
+
+try:
+    import tkinter as tk
+except:
+    print('WARNING: tkinter is not istalled or not accessible. Stability chart is not available.')
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
-import warnings
+
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from .pole_picking import SelectPoles
