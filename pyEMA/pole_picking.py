@@ -4,7 +4,12 @@ import glob
 
 import numpy as np
 import matplotlib.pyplot as plt
-import tkinter as tk
+
+try:
+    import tkinter as tk
+except:
+    pass
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
