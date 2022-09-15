@@ -1,7 +1,7 @@
 pyEMA
 =====
 
-**This project is no longer maintained. It is further developed within the `sdypy`_ framework and was renamed to `sdypy-EMA`_**
+**This project is no longer maintained.** It is further developed within the `sdypy`_ framework and was renamed to `sdypy-EMA`_.
 
 
 Experimental and operational modal analysis
@@ -106,6 +106,6 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 
 .. _sdypy: https://github.com/sdypy/sdypy
 
-.. _sdypyema: https://github.com/ladisk/sdypy-EMA
+.. _sdypy-EMA: https://github.com/ladisk/sdypy-EMA
 
 
