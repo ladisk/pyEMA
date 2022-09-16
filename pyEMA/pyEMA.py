@@ -403,13 +403,22 @@ class Model():
         _FRF_mat = self.frf[:, lower_ind:upper_ind]
         ome = 2 * np.pi * _freq
         M_2 = len(poles)
-        
+
         def TA_construction(TA_omega):
             len_ome = len(TA_omega)
-            if TA_omega[0] == 0: 
+            if TA_omega[0] == 0:
                 TA_omega[0] = 1.e-2
 
             _ome = TA_omega[:, np.newaxis]
+
+            if upper_r and lower_r:
+                TA = np.zeros([2*len_ome, 2*M_2 + 4])
+            elif upper_r:
+                TA = np.zeros([2*len_ome, 2*M_2 + 2])
+            elif lower_r:
+                TA = np.zeros([2*len_ome, 2*M_2 + 2])
+            else:
+                TA = np.zeros([2*len_ome, 2*M_2])
 
             # Initialization
             TA = np.zeros([2*len_ome, 2*M_2 + 4])
@@ -423,22 +432,36 @@ class Model():
                                         (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
             TA[len_ome:, 1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
                                         (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            
+
             # Lower and upper residuals contribution
-            TA[:len_ome, -4] = -1/(TA_omega**2)
-            TA[len_ome:, -3] = -1/(TA_omega**2)
-            TA[:len_ome, -2] = np.ones(len_ome)
-            TA[len_ome:, -1] = np.ones(len_ome)
+            if upper_r and lower_r:
+                TA[:len_ome, -4] = -1/(TA_omega**2)
+                TA[len_ome:, -3] = -1/(TA_omega**2)
+                TA[:len_ome, -2] = np.ones(len_ome)
+                TA[len_ome:, -1] = np.ones(len_ome)
+            elif lower_r:
+                TA[:len_ome, -2] = -1/(TA_omega**2)
+                TA[len_ome:, -1] = -1/(TA_omega**2)
+            elif upper_r:
+                TA[:len_ome, -2] = np.ones(len_ome)
+                TA[len_ome:, -1] = np.ones(len_ome)
 
             return TA
 
         AT = np.linalg.pinv(TA_construction(ome))
         FRF_r_i = np.concatenate([np.real(_FRF_mat.T),np.imag(_FRF_mat.T)])
-        A_LSFD = AT @ FRF_r_i      
-        
+        A_LSFD = AT @ FRF_r_i
+
         self.A = (A_LSFD[0:2*M_2:2, :] + 1.j*A_LSFD[1:2*M_2+1:2, :]).T
-        self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
-        self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+
+        if upper_r and lower_r:
+            self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
+            self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+        elif lower_r:
+            self.LR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+        elif upper_r:
+            self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+
         self.poles = poles
 
         # FRF reconstruction
