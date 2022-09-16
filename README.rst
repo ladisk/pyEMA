@@ -1,9 +1,6 @@
 pyEMA
 =====
 
-**This project is no longer maintained.** It is further developed within the `sdypy`_ framework and was renamed to `sdypy-EMA`_.
-
-
 Experimental and operational modal analysis
 
 Check out the `documentation`_.
