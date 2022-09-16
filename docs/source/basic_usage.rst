@@ -5,7 +5,7 @@ A case of typical usage is presented here.
 To use real code, take a look at the `showcase notebook <https://github.com/ladisk/pyEMA/blob/master/pyEMA%20Showcase.ipynb>`_.
 
 Instance of the ``Model`` class
------------------------------
+-------------------------------
 First, make a ``Model`` object:
 
 .. code:: python

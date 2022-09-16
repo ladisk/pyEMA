@@ -6,11 +6,17 @@ from tqdm import tqdm
 from scipy.linalg import toeplitz, companion
 from scipy.optimize import least_squares, leastsq
 
-import tkinter as tk
+import warnings
+
+try:
+    import tkinter as tk
+except:
+    print('WARNING: tkinter is not istalled or not accessible. Stability chart is not available.')
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 
-import warnings
+
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 from .pole_picking import SelectPoles
@@ -34,6 +40,7 @@ class Model():
                  get_partfactors=False):
         """
         :param frf: Frequency response function matrix (must be receptance!)
+            A ndarray with shape `(n_locations, n_frequency_points)`.
         :type frf: ndarray
         :param freq: Frequency array
         :type freq: array
@@ -245,7 +252,7 @@ class Model():
             self.pole_xi.append(ceta)
 
     def select_poles(self):
-        """Select stable poles from the stability chart.
+        """Select stable poles from stability chart.
         
         Interactive pole selection is possible. Identification of natural 
         frequency and damping coefficients is executed on-the-fly,
@@ -253,8 +260,8 @@ class Model():
 
         The identification can be done in two ways:
         ::
-            # 1. Using the stability chart
-            >>> a.stab_chart() # pick poles
+            # 1. Using stability chart
+            >>> a.select_poles() # pick poles
             >>> a.nat_freq # natural frequencies
             >>> a.nat_xi # damping coefficients
             >>> a.H # reconstructed FRF matrix
@@ -268,178 +275,6 @@ class Model():
             >>> H, A = a.get_constants(whose_poles='own', FRF_ind='all) # reconstruction
         """
         _ = SelectPoles(self)
-
-    def stab_chart(self, poles='all', fn_temp=0.001, xi_temp=0.05, legend=True, latex_render=False, title=None):
-        """
-        This method is deprecated. Please use ``select_poles()`` instead.
-
-        Render stability chart.
-
-        Interactive pole selection is possible. Identification of natural 
-        frequency and damping coefficients is executed on-the-fly,
-        as well as computing the reconstructed FRF and modal constants.
-
-        :param poles: poles to be shown on the plot. If 'all', all the poles are shown.
-        :param fn_temp: Natural frequency stability crieterion.
-        :param xi_temp: Damping stability criterion.
-        :param legen: wheather to show the legend
-        :param latex_render: if True, the latex render is used for fonts.
-        :param title: if given, the stabilization chart is saved under that title.
-
-        The identification can be done in two ways:
-        ::
-            # 1. Using stability chart
-            >>> a.stab_chart() # pick poles
-            >>> a.nat_freq # natural frequencies
-            >>> a.nat_xi # damping coefficients
-            >>> a.H # reconstructed FRF matrix
-            >>> a.A # modal constants (a.A[:, -2:] are Lower and Upper residual)
-
-            # 2. Using approximate natural frequencies
-            >>> approx_nat_freq = [234, 545]
-            >>> a.select_closest_poles(approx_nat_freq)
-            >>> a.nat_freq # natural frequencies
-            >>> a.nat_xi # damping coefficients
-            >>> H, A = a.get_constants(whose_poles='own', FRF_ind='all) # reconstruction
-        """
-        warnings.warn('`stab_chart()` method is deprecated. Please use the `select_poles()` method.')
-
-        if poles == 'all':
-            poles = self.all_poles
-
-        def replot(init=False):
-            """Replot the measured and reconstructed FRF based on new selected poles."""
-            ax2.clear()
-            ax2.semilogy(self.freq, np.average(
-                np.abs(self.frf), axis=0), alpha=0.7, color='k')
-
-            if not init:
-                self.H, self.A = self.get_constants(whose_poles='own', FRF_ind='all', least_squares_type='new')
-                ax2.semilogy(self.freq, np.average(
-                    np.abs(self.H), axis=0), color='r', lw=2)
-
-            ax1.set_xlim([self.lower, self.upper])
-            ax1.set_ylim([0, self.pol_order_high+5])
-
-        Nmax = self.pol_order_high
-        fn_temp, xi_temp, test_fn, test_xi = stabilization._stabilization(
-            poles, Nmax, err_fn=fn_temp, err_xi=xi_temp)
-
-        root = tk.Tk()  # Tkinter
-        root.title('Stability Chart')  # Tkinter
-        fig = Figure(figsize=(20, 8))  # Tkinter
-        ax2 = fig.add_subplot(111)  # Tkinter
-
-        ax1 = ax2.twinx()
-        ax1.grid(True)
-        replot(init=True)
-
-        ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
-        ax1.set_ylabel(r'Polynomial order', fontsize=12)
-        ax2.set_ylabel(r'$|\alpha|$', fontsize=12)
-
-        if latex_render is True:
-            plt.rc('text', usetex=True)
-            plt.rc('font', family='serif')
-            ax1.tick_params(axis='both', which='major', labelsize=12)
-            ax2.tick_params(axis='both', which='major', labelsize=12)
-            ax1.set_xlabel(r'$f$ [Hz]', fontsize=12)
-            ax1.set_ylabel(r'Polynomial order', fontsize=12)
-            ax2.set_ylabel(r'$|\alpha|_{log}$', fontsize=12)
-            ax1.set_xlim([self.lower, self.upper])
-
-        # stable eigenfrequencues, unstable damping ratios
-        a = np.argwhere((test_fn > 0) & ((test_xi == 0) | (xi_temp <= 0)))
-        # stable eigenfrequencies, stable damping ratios
-        b = np.argwhere((test_fn > 0) & ((test_xi > 0) & (xi_temp > 0)))
-        # unstable eigenfrequencues, unstable damping ratios
-        c = np.argwhere((test_fn == 0) & ((test_xi == 0) | (xi_temp <= 0)))
-        # unstable eigenfrequencues, stable damping ratios
-        d = np.argwhere((test_fn == 0) & ((test_xi > 0) & (xi_temp > 0)))
-
-        p1 = ax1.plot(fn_temp[a[:, 0], a[:, 1]], 1+a[:, 1], 'bx',
-                      markersize=4, label="stable frequency, unstable damping")
-        p2 = ax1.plot(fn_temp[b[:, 0], b[:, 1]], 1+b[:, 1], 'gx',
-                      markersize=7, label="stable frequency, stable damping")
-        p3 = ax1.plot(fn_temp[c[:, 0], c[:, 1]], 1+c[:, 1], 'r.',
-                      markersize=4, label="unstable frequency, unstable damping")
-        p4 = ax1.plot(fn_temp[d[:, 0], d[:, 1]], 1+d[:, 1], 'r*',
-                      markersize=4, label="unstable frequency, stable damping")
-
-        if legend:
-            ax1.legend(loc='upper center', ncol=2, frameon=True)
-        plt.tight_layout()
-
-        print('SHIFT + LEFT mouse button to select a pole.\nSHIFT + RIGHT mouse button to unselect the last pick.')
-        self.nat_freq = []
-        self.nat_xi = []
-        self.pole_ind = []
-
-        line, = ax1.plot(self.nat_freq, np.repeat(
-            self.pol_order_high, len(self.nat_freq)), 'kv', markersize=8)
-
-        # Mark selected poles
-        selected, = ax1.plot([], [], 'ko')
-
-        self.shift_is_held = False
-
-        def on_key_press(event):
-            """Function triggered on key press (SHIFT)."""
-            if event.key == 'shift':
-                self.shift_is_held = True
-
-        def on_key_release(event):
-            """Function triggered on key release (SHIFT)."""
-            if event.key == 'shift':
-                self.shift_is_held = False
-
-        def onclick(event):
-            # on button 1 press (left mouse button) + SHIFT is held
-            if event.button == 1 and self.shift_is_held:
-                self.y_data_pole = [event.ydata]
-                self.x_data_pole = event.xdata
-                self._select_closest_poles_on_the_fly()
-
-                replot()
-
-                print(
-                    f'{len(self.nat_freq)}. Frequency: ~{int(np.round(event.xdata))} -->\t{self.nat_freq[-1]} Hz\t(xi = {self.nat_xi[-1]:.4f})')
-
-            # On button 3 press (left mouse button)
-            elif event.button == 3 and self.shift_is_held:
-                try:
-                    del self.nat_freq[-1]  # delete last point
-                    del self.nat_xi[-1]
-                    del self.pole_ind[-1]
-                    replot()
-                    print('Unselecting the last pick...')
-                except:
-                    pass
-
-            line.set_xdata(np.asarray(self.nat_freq))  # update data
-            line.set_ydata(np.repeat(Nmax*1.04, len(self.nat_freq)))
-
-            selected.set_xdata([self.pole_freq[p[0]][p[1]]
-                                for p in self.pole_ind])  # update data
-            selected.set_ydata([p[0] for p in self.pole_ind])
-            fig.canvas.draw()
-
-        canvas = FigureCanvasTkAgg(fig, root)  # Tkinter
-        canvas.get_tk_widget().pack(side='top', fill='both', expand=1)  # Tkinter
-        NavigationToolbar2Tk(canvas, root)  # Tkinter
-
-        def on_closing():
-            if title is not None:
-                fig.savefig(title)
-            root.destroy()
-
-        # Connecting functions to event manager
-        fig.canvas.mpl_connect('key_press_event', on_key_press)
-        fig.canvas.mpl_connect('key_release_event', on_key_release)
-        fig.canvas.mpl_connect('button_press_event', onclick)
-
-        root.protocol("WM_DELETE_WINDOW", on_closing)
-        root.mainloop()  # Tkinter
 
     def _select_closest_poles_on_the_fly(self):
         """
@@ -568,13 +403,22 @@ class Model():
         _FRF_mat = self.frf[:, lower_ind:upper_ind]
         ome = 2 * np.pi * _freq
         M_2 = len(poles)
-        
+
         def TA_construction(TA_omega):
             len_ome = len(TA_omega)
-            if TA_omega[0] == 0: 
+            if TA_omega[0] == 0:
                 TA_omega[0] = 1.e-2
 
             _ome = TA_omega[:, np.newaxis]
+
+            if upper_r and lower_r:
+                TA = np.zeros([2*len_ome, 2*M_2 + 4])
+            elif upper_r:
+                TA = np.zeros([2*len_ome, 2*M_2 + 2])
+            elif lower_r:
+                TA = np.zeros([2*len_ome, 2*M_2 + 2])
+            else:
+                TA = np.zeros([2*len_ome, 2*M_2])
 
             # Initialization
             TA = np.zeros([2*len_ome, 2*M_2 + 4])
@@ -588,22 +432,36 @@ class Model():
                                         (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
             TA[len_ome:, 1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
                                         (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            
+
             # Lower and upper residuals contribution
-            TA[:len_ome, -4] = -1/(TA_omega**2)
-            TA[len_ome:, -3] = -1/(TA_omega**2)
-            TA[:len_ome, -2] = np.ones(len_ome)
-            TA[len_ome:, -1] = np.ones(len_ome)
+            if upper_r and lower_r:
+                TA[:len_ome, -4] = -1/(TA_omega**2)
+                TA[len_ome:, -3] = -1/(TA_omega**2)
+                TA[:len_ome, -2] = np.ones(len_ome)
+                TA[len_ome:, -1] = np.ones(len_ome)
+            elif lower_r:
+                TA[:len_ome, -2] = -1/(TA_omega**2)
+                TA[len_ome:, -1] = -1/(TA_omega**2)
+            elif upper_r:
+                TA[:len_ome, -2] = np.ones(len_ome)
+                TA[len_ome:, -1] = np.ones(len_ome)
 
             return TA
 
         AT = np.linalg.pinv(TA_construction(ome))
         FRF_r_i = np.concatenate([np.real(_FRF_mat.T),np.imag(_FRF_mat.T)])
-        A_LSFD = AT @ FRF_r_i      
-        
+        A_LSFD = AT @ FRF_r_i
+
         self.A = (A_LSFD[0:2*M_2:2, :] + 1.j*A_LSFD[1:2*M_2+1:2, :]).T
-        self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
-        self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+
+        if upper_r and lower_r:
+            self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
+            self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+        elif lower_r:
+            self.LR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+        elif upper_r:
+            self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+
         self.poles = poles
 
         # FRF reconstruction

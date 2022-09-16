@@ -108,3 +108,32 @@ def MSF(phi_X, phi_A):
         msf.append(_msf)
 
     return np.array(msf).real
+
+
+def MCF(phi):
+    """ Modal complexity factor.
+
+    The MCF ranges from 0 to 1. It returns 0 for real modes and 1 for complex modes. 
+    When ``dtype`` of ``phi`` is ``complex``, the modes can still be real, if the angles 
+    of all components are the same.
+
+    Additional information on MCF:
+    http://www.svibs.com/resources/ARTeMIS_Modal_Help/Generic%20Complexity%20Plot.html
+    
+    :param phi: Complex mode shape matrix, shape: ``(n_locations, n_modes)``
+        or ``n_locations``.
+    :return: MCF (a value between 0 and 1)
+    """
+    if phi.ndim == 1:
+        phi = phi[:, None]
+    n_modes = phi.shape[1]
+    mcf = []
+    for i in range(n_modes):
+        S_xx = np.dot(phi[:, i].real, phi[:, i].real)
+        S_yy = np.dot(phi[:, i].imag, phi[:, i].imag)
+        S_xy = np.dot(phi[:, i].real, phi[:, i].imag)
+        
+        _mcf = 1 - ((S_xx - S_yy)**2 + 4*S_xy**2) / (S_xx + S_yy)**2
+        
+        mcf.append(_mcf)
+    return np.array(mcf)

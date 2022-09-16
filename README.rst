@@ -101,5 +101,8 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 .. |Build Status| image:: https://travis-ci.com/ladisk/pyEMA.svg?branch=master
    :target: https://travis-ci.com/ladisk/pyEMA
 
+.. _sdypy: https://github.com/sdypy/sdypy
+
+.. _sdypy-EMA: https://github.com/ladisk/sdypy-EMA
 
 
