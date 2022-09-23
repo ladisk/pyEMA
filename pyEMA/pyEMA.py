@@ -404,51 +404,7 @@ class Model():
         ome = 2 * np.pi * _freq
         M_2 = len(poles)
 
-        def TA_construction(TA_omega):
-            len_ome = len(TA_omega)
-            if TA_omega[0] == 0:
-                TA_omega[0] = 1.e-2
-
-            _ome = TA_omega[:, np.newaxis]
-
-            if upper_r and lower_r:
-                TA = np.zeros([2*len_ome, 2*M_2 + 4])
-            elif upper_r:
-                TA = np.zeros([2*len_ome, 2*M_2 + 2])
-            elif lower_r:
-                TA = np.zeros([2*len_ome, 2*M_2 + 2])
-            else:
-                TA = np.zeros([2*len_ome, 2*M_2])
-
-            # Initialization
-            TA = np.zeros([2*len_ome, 2*M_2 + 4])
-
-            # Eigenmodes contribution
-            TA[:len_ome, 0:2*M_2:2] =    (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                        (-np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            TA[len_ome:, 0:2*M_2:2] =    (-(_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                        (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            TA[:len_ome, 1:2*M_2+1:2] =  ((_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                        (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-            TA[len_ome:, 1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                        (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-
-            # Lower and upper residuals contribution
-            if upper_r and lower_r:
-                TA[:len_ome, -4] = -1/(TA_omega**2)
-                TA[len_ome:, -3] = -1/(TA_omega**2)
-                TA[:len_ome, -2] = np.ones(len_ome)
-                TA[len_ome:, -1] = np.ones(len_ome)
-            elif lower_r:
-                TA[:len_ome, -2] = -1/(TA_omega**2)
-                TA[len_ome:, -1] = -1/(TA_omega**2)
-            elif upper_r:
-                TA[:len_ome, -2] = np.ones(len_ome)
-                TA[len_ome:, -1] = np.ones(len_ome)
-
-            return TA
-
-        AT = np.linalg.pinv(TA_construction(ome))
+        AT = np.linalg.pinv(TA_construction(ome, M_2, poles, upper_r, lower_r))
         FRF_r_i = np.concatenate([np.real(_FRF_mat.T),np.imag(_FRF_mat.T)])
         A_LSFD = AT @ FRF_r_i
 
@@ -469,7 +425,7 @@ class Model():
             return self.A
 
         elif FRF_ind == 'all':
-            _FRF_r_i = TA_construction(self.omega)@A_LSFD
+            _FRF_r_i = TA_construction(self.omega, M_2, poles, upper_r, lower_r)@A_LSFD
             frf_ = (_FRF_r_i[:len(self.omega),:] + _FRF_r_i[len(self.omega):,:]*1.j).T
             self.H = frf_
             return frf_, self.A
@@ -561,3 +517,51 @@ def _irfft_adjusted_lower_limit(x, low_lim, indices):
     b = (np.fft.irfft(x[:, :low_lim], n=nf)[:, indices]) * nf
 
     return a - b
+
+def TA_construction(TA_omega, M_2, poles, upper_r, lower_r):
+    """Construct a matrix for the modal constant identification.
+
+    The real and imaginary parts must be separated.
+    """
+    len_ome = len(TA_omega)
+    if TA_omega[0] == 0:
+        TA_omega[0] = 1.e-2
+
+    _ome = TA_omega[:, np.newaxis]
+
+    if upper_r and lower_r:
+        TA = np.zeros([2*len_ome, 2*M_2 + 4])
+    elif upper_r:
+        TA = np.zeros([2*len_ome, 2*M_2 + 2])
+    elif lower_r:
+        TA = np.zeros([2*len_ome, 2*M_2 + 2])
+    else:
+        TA = np.zeros([2*len_ome, 2*M_2])
+
+    # Initialization
+    TA = np.zeros([2*len_ome, 2*M_2 + 4])
+
+    # Eigenmodes contribution
+    TA[:len_ome, 0:2*M_2:2] =    (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                (-np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+    TA[len_ome:, 0:2*M_2:2] =    (-(_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+    TA[:len_ome, 1:2*M_2+1:2] =  ((_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+    TA[len_ome:, 1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
+                                (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+
+    # Lower and upper residuals contribution
+    if upper_r and lower_r:
+        TA[:len_ome, -4] = -1/(TA_omega**2)
+        TA[len_ome:, -3] = -1/(TA_omega**2)
+        TA[:len_ome, -2] = np.ones(len_ome)
+        TA[len_ome:, -1] = np.ones(len_ome)
+    elif lower_r:
+        TA[:len_ome, -2] = -1/(TA_omega**2)
+        TA[len_ome:, -1] = -1/(TA_omega**2)
+    elif upper_r:
+        TA[:len_ome, -2] = np.ones(len_ome)
+        TA[len_ome:, -1] = np.ones(len_ome)
+
+    return TA
