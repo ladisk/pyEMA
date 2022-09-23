@@ -51,6 +51,13 @@ class Model():
         :type upper: int, float
         :param pol_order_high: Highest order of the polynomial
         :type pol_order_high: int
+        :param pyfrf: add FRFs directly from the pyFRF object
+        :type pyfrf: bool
+        :param get_partfactors: calculate the participation factors.
+        :type get_partfactors: bool
+        :param driving point: the index of the driving point (used to scale
+            the modal constants to modal shapes)
+        :type driving_point: int, defaults to None
         """
         try:
             self.lower = float(lower)
