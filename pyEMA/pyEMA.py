@@ -37,7 +37,8 @@ class Model():
                  upper=10000,
                  pol_order_high=100,
                  pyfrf=False,
-                 get_partfactors=False):
+                 get_partfactors=False,
+                 driving_point=None):
         """
         :param frf: Frequency response function matrix (must be receptance!)
             A ndarray with shape `(n_locations, n_frequency_points)`.
@@ -103,6 +104,14 @@ class Model():
                 self.sampling_time = 1/(2*self.freq[-1])
             else:
                 self.sampling_time = dt
+
+        if driving_point is None:
+            self.driving_point = driving_point
+        else:
+            if type(driving_point) != int:
+                raise('"driving_point" must be an integer')
+            else:
+                self.driving_point = driving_point
         
         self.get_participation_factors = get_partfactors
 
@@ -409,6 +418,9 @@ class Model():
         A_LSFD = AT @ FRF_r_i
 
         self.A = (A_LSFD[0:2*M_2:2, :] + 1.j*A_LSFD[1:2*M_2+1:2, :]).T
+
+        if self.driving_point is not None:
+            self.phi = np.array([Ai/np.sqrt(Ai[self.driving_point]) for Ai in self.A.T]).T
 
         if upper_r and lower_r:
             self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
