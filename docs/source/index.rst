@@ -12,7 +12,7 @@ This is the documentation for pyEMA package. Check out the project source_.
     :maxdepth: 2
     :caption: Contents
 
-    basic_usage
+    tutorial
     code_documentation
 
 
