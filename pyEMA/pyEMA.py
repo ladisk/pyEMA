@@ -426,9 +426,12 @@ class Model():
 
         self.A = (A_LSFD[0:2*M_2:2, :] + 1.j*A_LSFD[1:2*M_2+1:2, :]).T
 
+        # Scale with the driving point to obtain the modal shapes
         if self.driving_point is not None:
-            self.phi = np.array([Ai/np.sqrt(Ai[self.driving_point]) for Ai in self.A.T]).T
+            scale = self.A[self.driving_point]**(0.5)
+            self.phi = self.A/scale
 
+        # Get the upper and lower residuals
         if upper_r and lower_r:
             self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
             self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
