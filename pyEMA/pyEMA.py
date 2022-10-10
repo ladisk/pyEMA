@@ -391,9 +391,9 @@ class Model():
         :type lower_r: bool, optional
         :return: modal constants if ``FRF_ind=None``, otherwise reconstructed FRFs and modal constants
         """
-        if method != 'lsfd':
+        if method not in ['lsfd', 'lsfd_proportional']:
             raise Exception(
-                f'no method "{method}". Currently only "lsfd" method is implemented.')
+                f'no method "{method}".')
 
         if whose_poles == 'own':
             whose_poles = self
@@ -415,51 +415,19 @@ class Model():
         lower_ind = np.argmin(np.abs(self.freq - f_lower))
         upper_ind = np.argmin(np.abs(self.freq - f_upper))
 
-        _freq = self.freq[lower_ind:upper_ind]
-        _FRF_mat = self.frf[:, lower_ind:upper_ind]
-        ome = 2 * np.pi * _freq
-        M_2 = len(poles)
-
-        AT = np.linalg.pinv(TA_construction(ome, M_2, poles, upper_r, lower_r))
-        FRF_r_i = np.concatenate([np.real(_FRF_mat.T),np.imag(_FRF_mat.T)])
-        A_LSFD = AT @ FRF_r_i
-
-        self.A = (A_LSFD[0:2*M_2:2, :] + 1.j*A_LSFD[1:2*M_2+1:2, :]).T
+        # Modal constant identification
+        if method == 'lsfd':
+            self.A, self.H, self.LR, self.UR = LSFD(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind)
+        elif method == 'lsfd_proportional':
+            pass
 
         # Scale with the driving point to obtain the modal shapes
         if self.driving_point is not None:
             scale = self.A[self.driving_point]**(0.5)
             self.phi = self.A/scale
 
-        # Get the upper and lower residuals
-        if upper_r and lower_r:
-            self.LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
-            self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
-        elif lower_r:
-            self.LR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
-        elif upper_r:
-            self.UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
-
-        self.poles = poles
-
-        # FRF reconstruction
-        if FRF_ind is None:
-            return self.A
-
-        elif FRF_ind == 'all':
-            _FRF_r_i = TA_construction(self.omega, M_2, poles, upper_r, lower_r)@A_LSFD
-            frf_ = (_FRF_r_i[:len(self.omega),:] + _FRF_r_i[len(self.omega):,:]*1.j).T
-            self.H = frf_
-            return frf_, self.A
-
-        elif isinstance(FRF_ind, int):
-            frf_ = self.FRF_reconstruct(FRF_ind)[None, :]
-            self.H = frf_
-            return frf_, self.A
-
-        else:
-            raise Exception('FRF_ind must be None, "all" or int')
-
+        return self.H, self.A
+        
     def FRF_reconstruct(self, FRF_ind):
         """
         Reconstruct FRF based on modal constants.
@@ -540,50 +508,98 @@ def _irfft_adjusted_lower_limit(x, low_lim, indices):
 
     return a - b
 
-def TA_construction(TA_omega, M_2, poles, upper_r, lower_r):
+
+def LSFD(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind):
+    """Identification of the modal constants using the Least-Squares Frequency Domain method.
+    
+    :param poles: poles, identified with the LSCF
+    :param frf: the measured Frequeny Response Functions
+    :param freq: the frequency vector [Hz]
+    :param lower_r: bool, include the lower residuals
+    :param upper_r: bool, include the upper residuals
+    :param lower_ind: the lower frequency limit
+    :param upper_ind: the upper frequency limit
+    """
+    nr_poles = len(poles)
+    frf_ = frf[:, lower_ind:upper_ind]
+    freq_ = freq[lower_ind:upper_ind]
+
+    TA = TA_construction(poles, freq_, lower_r, upper_r)
+    AT = np.linalg.pinv(TA)
+    FRF_r_i = np.concatenate([np.real(frf_.T),np.imag(frf_.T)])
+    A_LSFD = AT @ FRF_r_i
+
+    A = (A_LSFD[0:2*nr_poles:2, :] + 1.j*A_LSFD[1:2*nr_poles+1:2, :]).T
+
+    # FRF reconstruction
+    FRF_rec_ = TA_construction(poles, freq, lower_r, upper_r) @ A_LSFD
+    FRF_rec = (FRF_rec_[:len(freq),:] + FRF_rec_[len(freq):,:]*1.j).T
+
+
+    # Get the upper and lower residuals
+    if upper_r and lower_r:
+        LR = A_LSFD[-4, :]+1.j*A_LSFD[-3, :]
+        UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+
+    elif lower_r:
+        LR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+        UR = 0
+
+    elif upper_r:
+        LR = 0
+        UR = A_LSFD[-2, :]+1.j*A_LSFD[-1, :]
+
+    return A, FRF_rec, LR, UR
+
+
+def TA_construction(poles, freq, lower_r, upper_r):
     """Construct a matrix for the modal constant identification.
 
     The real and imaginary parts must be separated.
     """
-    len_ome = len(TA_omega)
-    if TA_omega[0] == 0:
-        TA_omega[0] = 1.e-2
+    nr_poles = len(poles)
+    nr_freq = len(freq)
 
-    _ome = TA_omega[:, np.newaxis]
+    omega = 2*np.pi*freq
+
+    if omega[0] == 0:
+        omega[0] = 1.e-2
+
+    omega_ = omega[:, None]
 
     if upper_r and lower_r:
-        TA = np.zeros([2*len_ome, 2*M_2 + 4])
+        TA = np.zeros([2*nr_freq, 2*nr_poles + 4])
     elif upper_r:
-        TA = np.zeros([2*len_ome, 2*M_2 + 2])
+        TA = np.zeros([2*nr_freq, 2*nr_poles + 2])
     elif lower_r:
-        TA = np.zeros([2*len_ome, 2*M_2 + 2])
+        TA = np.zeros([2*nr_freq, 2*nr_poles + 2])
     else:
-        TA = np.zeros([2*len_ome, 2*M_2])
+        TA = np.zeros([2*nr_freq, 2*nr_poles])
 
     # Initialization
-    TA = np.zeros([2*len_ome, 2*M_2 + 4])
+    TA = np.zeros([2*nr_freq, 2*nr_poles + 4])
 
     # Eigenmodes contribution
-    TA[:len_ome, 0:2*M_2:2] =    (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                (-np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-    TA[len_ome:, 0:2*M_2:2] =    (-(_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-    TA[:len_ome, 1:2*M_2+1:2] =  ((_ome-np.imag(poles)))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                (-(_ome+np.imag(poles)))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
-    TA[len_ome:, 1:2*M_2+1:2] =  (-np.real(poles))/(np.real(poles)**2+(_ome-np.imag(poles))**2)+\
-                                (np.real(poles))/(np.real(poles)**2+(_ome+np.imag(poles))**2)
+    TA[:nr_freq, 0:2*nr_poles:2] =    (-np.real(poles))/(np.real(poles)**2+(omega_-np.imag(poles))**2)+\
+                                (-np.real(poles))/(np.real(poles)**2+(omega_+np.imag(poles))**2)
+    TA[nr_freq:, 0:2*nr_poles:2] =    (-(omega_-np.imag(poles)))/(np.real(poles)**2+(omega_-np.imag(poles))**2)+\
+                                (-(omega_+np.imag(poles)))/(np.real(poles)**2+(omega_+np.imag(poles))**2)
+    TA[:nr_freq, 1:2*nr_poles+1:2] =  ((omega_-np.imag(poles)))/(np.real(poles)**2+(omega_-np.imag(poles))**2)+\
+                                (-(omega_+np.imag(poles)))/(np.real(poles)**2+(omega_+np.imag(poles))**2)
+    TA[nr_freq:, 1:2*nr_poles+1:2] =  (-np.real(poles))/(np.real(poles)**2+(omega_-np.imag(poles))**2)+\
+                                (np.real(poles))/(np.real(poles)**2+(omega_+np.imag(poles))**2)
 
     # Lower and upper residuals contribution
     if upper_r and lower_r:
-        TA[:len_ome, -4] = -1/(TA_omega**2)
-        TA[len_ome:, -3] = -1/(TA_omega**2)
-        TA[:len_ome, -2] = np.ones(len_ome)
-        TA[len_ome:, -1] = np.ones(len_ome)
+        TA[:nr_freq, -4] = -1/(omega**2)
+        TA[nr_freq:, -3] = -1/(omega**2)
+        TA[:nr_freq, -2] = np.ones(nr_freq)
+        TA[nr_freq:, -1] = np.ones(nr_freq)
     elif lower_r:
-        TA[:len_ome, -2] = -1/(TA_omega**2)
-        TA[len_ome:, -1] = -1/(TA_omega**2)
+        TA[:nr_freq, -2] = -1/(omega**2)
+        TA[nr_freq:, -1] = -1/(omega**2)
     elif upper_r:
-        TA[:len_ome, -2] = np.ones(len_ome)
-        TA[len_ome:, -1] = np.ones(len_ome)
+        TA[:nr_freq, -2] = np.ones(nr_freq)
+        TA[nr_freq:, -1] = np.ones(nr_freq)
 
     return TA
