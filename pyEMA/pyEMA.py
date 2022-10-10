@@ -419,7 +419,7 @@ class Model():
         if method == 'lsfd':
             self.A, self.H, self.LR, self.UR = LSFD(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind)
         elif method == 'lsfd_proportional':
-            pass
+            self.A, self.H = LSFD_proportional(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind)
 
         # Scale with the driving point to obtain the modal shapes
         if self.driving_point is not None:
@@ -603,3 +603,55 @@ def TA_construction(poles, freq, lower_r, upper_r):
         TA[nr_freq:, -1] = np.ones(nr_freq)
 
     return TA
+
+def LSFD_proportional(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind):
+    """Identification of the modal constants using the Least-Squares Frequency Domain
+    method, where the real-valued modal constants (proportional damping) are assumed.
+   
+    :param poles: poles, identified with the LSCF
+    :param frf: the measured Frequeny Response Functions
+    :param freq: the frequency vector [Hz]
+    :param lower_r: bool, include the lower residuals
+    :param upper_r: bool, include the upper residuals
+    :param lower_ind: the lower frequency limit
+    :param upper_ind: the upper frequency limit
+    """
+    frf = frf.T
+
+    omega = 2*np.pi*freq[:, None]
+
+    f, xi = tools.complex_freq_to_freq_and_damp(poles)
+    w = 2*np.pi*f
+
+    p11 = (w**2 - omega**2) / (omega**4 + 2*(2*xi**2 - 1)*omega**2 * w**2 +w**4)
+    p21 = (-2*omega*w*xi) / (omega**4 + 2*(2*xi**2 - 1)*omega**2 * w**2 +w**4)
+
+    if lower_r and upper_r:
+        # lower residuals
+        p12 = np.kron(np.array([1,0]), -1/omega**2)
+        p22 = np.kron(np.array([0,1]), -1/omega**2)
+
+        # upper residuals
+        p13 = np.kron(np.array([1,0]), np.ones(freq.shape[0])[:,np.newaxis])
+        p23 = np.kron(np.array([1,0]), np.ones(freq.shape[0])[:,np.newaxis])
+
+        P = np.block([[p11, p12, p13], [p21, p22, p23]])
+    else:
+        P = np.block([[p11], [p21]]) # no residuals
+
+    Y = np.block([[frf.real], [frf.imag]])
+   
+    # Lower and upper frequency limit mask
+    mask = np.zeros(Y.shape[0], dtype=bool)
+    mask[lower_ind:upper_ind] = True
+    mask[frf.shape[0]+lower_ind:frf.shape[0]+upper_ind] = True
+
+    A_ = np.einsum("pf,fo->op", np.linalg.pinv(P[mask]), Y[mask])
+    A = A_[:, :w.shape[0]]
+
+    # FRF reconstruction
+    FRF_rec_ = np.einsum("fp,op", P, A_)
+    FRF_rec_r, FRF_rec_i = np.split(FRF_rec_, 2, axis=0)
+    FRF_rec = (FRF_rec_r + 1.j*FRF_rec_i).T
+   
+    return A, FRF_rec
