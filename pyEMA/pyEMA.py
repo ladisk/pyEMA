@@ -38,9 +38,10 @@ class Model():
                  pol_order_high=100,
                  pyfrf=False,
                  get_partfactors=False,
-                 driving_point=None):
+                 driving_point=None,
+                 frf_type='accelerance'):
         """
-        :param frf: Frequency response function matrix (must be receptance!)
+        :param frf: Frequency response function matrix
             A ndarray with shape `(n_locations, n_frequency_points)`.
         :type frf: ndarray
         :param freq: Frequency array
@@ -58,6 +59,9 @@ class Model():
         :param driving point: the index of the driving point (used to scale
             the modal constants to modal shapes)
         :type driving_point: int, defaults to None
+        :param frf_type: type of the Frequency Response Function. Must be 'receptance',
+            'mobility' or 'accelerance'. The correct FRF type selection is important for
+            the LSFD algorithm.
         """
         try:
             self.lower = float(lower)
@@ -119,7 +123,12 @@ class Model():
                 raise('"driving_point" must be an integer')
             else:
                 self.driving_point = driving_point
-        
+
+        if frf_type not in ['receptance', 'mobility', 'accelerance']:
+            raise('"frf_type" must be "receptance", "mobility" or "accelerance".')
+        else:
+            self.frf_type = frf_type
+       
         self.get_participation_factors = get_partfactors
 
     def add_frf(self, pyfrf_object):
@@ -269,8 +278,8 @@ class Model():
 
     def select_poles(self):
         """Select stable poles from stability chart.
-        
-        Interactive pole selection is possible. Identification of natural 
+       
+        Interactive pole selection is possible. Identification of natural
         frequency and damping coefficients is executed on-the-fly,
         as well as computing reconstructed FRF and modal constants.
 
@@ -417,9 +426,9 @@ class Model():
 
         # Modal constant identification
         if method == 'lsfd':
-            self.A, self.H, self.LR, self.UR = LSFD(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind)
+            self.A, self.H, self.LR, self.UR = LSFD(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind, self.frf_type)
         elif method == 'lsfd_proportional':
-            self.A, self.H = LSFD_proportional(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind)
+            self.A, self.H, self.LR, self.UR = LSFD_proportional(poles, self.frf, self.freq, lower_r, upper_r, lower_ind, upper_ind, self.frf_type)
 
         # Scale with the driving point to obtain the modal shapes
         if self.driving_point is not None:
@@ -427,7 +436,7 @@ class Model():
             self.phi = self.A/scale
 
         return self.H, self.A
-        
+       
     def FRF_reconstruct(self, FRF_ind):
         """
         Reconstruct FRF based on modal constants.
@@ -459,21 +468,21 @@ class Model():
 
     def normal_mode(self):
         """Transform the complex mode shape matrix self.A to normal mode shape.
-        
+       
         The real mode shape should have the maximum correlation with
         the original complex mode shape. The vector that is most correlated
         with the complex mode, is the real part of the complex mode when it is
         rotated so that the norm of its real part is maximized. [1]
-        
+       
         Literature:
-            [1] Gladwell, H. Ahmadian GML, and F. Ismail. 
+            [1] Gladwell, H. Ahmadian GML, and F. Ismail.
                 "Extracting Real Modes from Complex Measured Modes."
-        
+       
         :return: normal mode shape
         """
         if not hasattr(self, 'A'):
             raise Exception('Mode shape matrix not defined.')
-        
+       
         return normal_modes.complex_to_normal_mode(self.A)
 
     def print_modal_data(self):
@@ -509,9 +518,9 @@ def _irfft_adjusted_lower_limit(x, low_lim, indices):
     return a - b
 
 
-def LSFD(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind):
+def LSFD_old(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind, frf_type):
     """Identification of the modal constants using the Least-Squares Frequency Domain method.
-    
+   
     :param poles: poles, identified with the LSCF
     :param frf: the measured Frequeny Response Functions
     :param freq: the frequency vector [Hz]
@@ -604,7 +613,8 @@ def TA_construction(poles, freq, lower_r, upper_r):
 
     return TA
 
-def LSFD_proportional(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind):
+
+def LSFD_proportional(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind, frf_type):
     """Identification of the modal constants using the Least-Squares Frequency Domain
     method, where the real-valued modal constants (proportional damping) are assumed.
    
@@ -623,22 +633,50 @@ def LSFD_proportional(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind):
     f, xi = tools.complex_freq_to_freq_and_damp(poles)
     w = 2*np.pi*f
 
-    p11 = (w**2 - omega**2) / (omega**4 + 2*(2*xi**2 - 1)*omega**2 * w**2 +w**4)
-    p21 = (-2*omega*w*xi) / (omega**4 + 2*(2*xi**2 - 1)*omega**2 * w**2 +w**4)
+    # flexible terms
+    if frf_type == 'receptance':
+        p1F = (w**2 - omega**2) / (4 * xi**2 * omega**2 * w**2 + (-omega**2 + w**2)**2) # real part
+        p2F = (-2 * xi * omega * w) / (4 * xi**2 * omega**2 * w**2 + (-omega**2 + w**2)**2) # imag part
+    elif frf_type == 'mobility':
+        p1F = (2 * xi * omega**2 * w) / (4 * xi**2 * omega**2 * w**2 + (-omega**2 + w**2)**2) # real part
+        p2F = (-omega**3 + omega * w**2) / (4 * xi**2 * omega**2 * w**2 + (-omega**2 + w**2)**2) # imag part
+    elif frf_type == 'accelerance':
+        p1F = (omega**4 - omega**2 * w**2) / (4 * xi**2 * omega**2 * w**2 + (-omega**2 + w**2)**2) # real part
+        p2F = (2 * xi * omega**3 * w) / (4 * xi**2 * omega**2 * w**2 + (-omega**2 + w**2)**2) # imag part
 
-    if lower_r and upper_r:
+    if lower_r == True:
         # lower residuals
-        p12 = np.kron(np.array([1,0]), -1/omega**2)
-        p22 = np.kron(np.array([0,1]), -1/omega**2)
+        if frf_type == 'receptance':
+            p1L = np.kron(np.array([1, 0]), -1/omega**2)
+            p2L = np.kron(np.array([0, 1]), -1/omega**2)
+        elif frf_type == 'mobility':
+            p1L = np.kron(np.array([1, 0]), 1/omega) # real and imag part is switched because of frequency-domain derivation
+            p2L = np.kron(np.array([0, 1]), -1/omega)
+        elif frf_type == 'accelerance':
+            p1L = np.kron(np.array([1, 0]), np.ones(freq.shape[0])[:, np.newaxis])
+            p2L = np.kron(np.array([0, 1]), np.ones(freq.shape[0])[:, np.newaxis])
 
-        # upper residuals
-        p13 = np.kron(np.array([1,0]), np.ones(freq.shape[0])[:,np.newaxis])
-        p23 = np.kron(np.array([1,0]), np.ones(freq.shape[0])[:,np.newaxis])
 
-        P = np.block([[p11, p12, p13], [p21, p22, p23]])
-    else:
-        P = np.block([[p11], [p21]]) # no residuals
-
+    if upper_r == True:
+        if frf_type == 'receptance':
+            p1U = np.kron(np.array([1, 0]), np.ones(freq.shape[0])[:, np.newaxis])
+            p2U = np.kron(np.array([0, 1]), np.ones(freq.shape[0])[:, np.newaxis])
+        elif frf_type == 'mobility':
+            p1U = np.kron(np.array([1, 0]), -omega)
+            p2U = np.kron(np.array([0, 1]), omega)
+        elif frf_type == 'accelerance':
+            p1U = np.kron(np.array([1, 0]), -omega**2)
+            p2U = np.kron(np.array([0, 1]), -omega**2)
+       
+    if lower_r == True and upper_r == True:
+        P = np.block([[p1F, p1L, p1U], [p2F, p2L, p2U]])
+    elif lower_r == True and upper_r == False:
+        P = np.block([[p1F, p1L], [p2F, p2L]])
+    elif lower_r == False and upper_r == True:
+        P = np.block([[p1F, p1U], [p2F, p2U]])
+    elif lower_r == False and upper_r == False:
+        P = np.block([[p1F], [p2F]])
+       
     Y = np.block([[frf.real], [frf.imag]])
    
     # Lower and upper frequency limit mask
@@ -646,12 +684,164 @@ def LSFD_proportional(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind):
     mask[lower_ind:upper_ind] = True
     mask[frf.shape[0]+lower_ind:frf.shape[0]+upper_ind] = True
 
-    A_ = np.einsum("pf,fo->op", np.linalg.pinv(P[mask]), Y[mask])
+    A_ = np.linalg.lstsq(P[mask], Y[mask])[0].T
+    # modal constants
     A = A_[:, :w.shape[0]]
+   
+    # residuals
+    if lower_r == True and upper_r == True:
+        if frf_type == 'mobility':
+            LR = A_[:, -3] + 1j*A_[:, -4]
+            UR = A_[:, -1] + 1j*A_[:, -2]
+        else:
+            LR = A_[:, -4] + 1j*A_[:, -3]
+            UR = A_[:, -2] + 1j*A_[:, -1]
 
+    elif lower_r == True and upper_r == False:
+        if frf_type == 'mobility':
+            LR = A_[:, -1] + 1j*A_[:, -2]
+        else:
+            LR = A_[:, -2] + 1j*A_[:, -1]
+        UR = np.zeros(frf.shape[1], dtype=complex)
+    elif lower_r == False and upper_r == True:
+        LR = np.zeros(frf.shape[1], dtype=complex)
+        if frf_type == 'mobility':
+            UR = A_[:, -1] + 1j*A_[:, -2]
+        else:
+            UR = A_[:, -2] + 1j*A_[:, -1]
+    elif lower_r == False and upper_r == False:
+        LR = np.zeros(frf.shape[1], dtype=complex)
+        UR = np.zeros(frf.shape[1], dtype=complex)
+   
     # FRF reconstruction
     FRF_rec_ = np.einsum("fp,op", P, A_)
     FRF_rec_r, FRF_rec_i = np.split(FRF_rec_, 2, axis=0)
     FRF_rec = (FRF_rec_r + 1.j*FRF_rec_i).T
    
-    return A, FRF_rec
+    return A, FRF_rec, LR, UR
+
+
+def LSFD(poles, frf, freq, lower_r, upper_r, lower_ind, upper_ind, frf_type):
+    """Identification of the modal constants using the Least-Squares Frequency Domain
+    method, where the real-valued modal constants (proportional damping) are assumed.
+   
+    :param poles: poles, identified with the LSCF
+    :param frf: the measured Frequeny Response Functions
+    :param freq: the frequency vector [Hz]
+    :param lower_r: bool, include the lower residuals
+    :param upper_r: bool, include the upper residuals
+    :param lower_ind: the lower frequency limit
+    :param upper_ind: the upper frequency limit
+    """
+    frf = frf.T
+
+    omega = 2*np.pi*freq[:, None]
+
+    f, xi = tools.complex_freq_to_freq_and_damp(poles)
+    w = 2*np.pi*f
+
+    sr = poles.real
+    si = poles.imag
+
+    # flexible terms
+    if frf_type == 'receptance':
+        p11 = -(sr) / (sr**2 + (-si + omega)**2) - (sr) / (sr**2 + (si + omega)**2)
+        p12 = (-si + omega) / (sr**2 + (-si + omega)**2) - (si + omega) / (sr**2 + (si + omega)**2)
+        p21 = (si - omega) / (sr**2 + (-si + omega)**2) - (si + omega) / (sr**2 + (si + omega)**2)
+        p22 = -(sr) / (sr**2 + (-si + omega)**2) + (sr) / (sr**2 + (si + omega)**2)
+    elif frf_type == 'mobility':
+        p11 = (-si * omega + omega**2) / (sr**2 + (-si + omega)**2) + (si * omega + omega**2) / (sr**2 + (si + omega)**2)
+        p12 = (sr * omega) / (sr**2 + (-si + omega)**2) - (sr * omega) / (sr**2 + (si + omega)**2)
+        p21 = -(sr * omega) / (sr**2 + (-si + omega)**2) - (sr * omega) / (sr**2 + (si + omega)**2)
+        p22 = (-si * omega + omega**2) / (sr**2 + (-si + omega)**2) - (si * omega + omega**2) / (sr**2 + (si + omega)**2)
+    elif frf_type == 'accelerance':
+        p11 = (sr * omega**2) / (sr**2 + (-si + omega)**2) + (sr * omega**2) / (sr**2 + (si + omega)**2)
+        p12 = (si * omega**2 - omega**3) / (sr**2 + (-si + omega)**2) + (si * omega**2 + omega**3) / (sr**2 + (si + omega)**2)
+        p21 = (-si * omega**2 + omega**3) / (sr**2 + (-si + omega)**2) + (si * omega**2 + omega**3) / (sr**2 + (si + omega)**2)
+        p22 = (sr * omega**2) / (sr**2 + (-si + omega)**2) - (sr * omega**2) / (sr**2 + (si + omega)**2)
+
+    if lower_r == True:
+        # lower residuals
+        if frf_type == 'receptance':
+            p1L = np.kron(np.array([1, 0]), -1/omega**2)
+            p2L = np.kron(np.array([0, 1]), -1/omega**2)
+        elif frf_type == 'mobility':
+            p1L = np.kron(np.array([1, 0]), 1/omega) # real and imag part is switched because of frequency-domain derivation
+            p2L = np.kron(np.array([0, 1]), -1/omega)
+        elif frf_type == 'accelerance':
+            p1L = np.kron(np.array([1, 0]), np.ones(freq.shape[0])[:, np.newaxis])
+            p2L = np.kron(np.array([0, 1]), np.ones(freq.shape[0])[:, np.newaxis])
+
+
+    if upper_r == True:
+        if frf_type == 'receptance':
+            p1U = np.kron(np.array([1, 0]), np.ones(freq.shape[0])[:, np.newaxis])
+            p2U = np.kron(np.array([0, 1]), np.ones(freq.shape[0])[:, np.newaxis])
+        elif frf_type == 'mobility':
+            p1U = np.kron(np.array([1, 0]), -omega)
+            p2U = np.kron(np.array([0, 1]), omega)
+        elif frf_type == 'accelerance':
+            p1U = np.kron(np.array([1, 0]), -omega**2)
+            p2U = np.kron(np.array([0, 1]), -omega**2)
+       
+    if lower_r == True and upper_r == True:
+        P = np.block([[p11, p12, p1L, p1U], [p21, p22, p2L, p2U]])
+    elif lower_r == True and upper_r == False:
+        P = np.block([[p11, p12, p1L], [p21, p22, p2L]])
+    elif lower_r == False and upper_r == True:
+        P = np.block([[p11, p12, p1U], [p21, p22, p2U]])
+    elif lower_r == False and upper_r == False:
+        P = np.block([[p11, p12], [p21, p22]])
+       
+    Y = np.block([[frf.real], [frf.imag]])
+   
+    # Lower and upper frequency limit mask
+    mask = np.zeros(Y.shape[0], dtype=bool)
+    mask[lower_ind:upper_ind] = True
+    mask[frf.shape[0]+lower_ind:frf.shape[0]+upper_ind] = True
+
+    # weighted least squares in works
+    # weights = np.tile(np.sqrt(np.arange(lower_ind, upper_ind)), 2) # with sqrt
+    # W = np.diag(weights/np.max(weights))
+    # weights = np.tile(np.sum(1/((freq[:, None] - f)**2 + 1e5), axis=1), 2)[mask]
+    # W = np.diag(weights/np.max(weights))
+    # A_ = np.linalg.lstsq(W@P[mask], W@Y[mask])[0].T
+
+
+    A_ = np.linalg.lstsq(P[mask], Y[mask])[0].T
+    # modal constants
+    Ar, Ai = np.split(A_[:, :2*w.shape[0]], 2, axis=1)
+    A = Ar + 1j*Ai
+
+   
+    # residuals
+    if lower_r == True and upper_r == True:
+        if frf_type == 'mobility':
+            LR = A_[:, -3] + 1j*A_[:, -4]
+            UR = A_[:, -1] + 1j*A_[:, -2]
+        else:
+            LR = A_[:, -4] + 1j*A_[:, -3]
+            UR = A_[:, -2] + 1j*A_[:, -1]
+
+    elif lower_r == True and upper_r == False:
+        if frf_type == 'mobility':
+            LR = A_[:, -1] + 1j*A_[:, -2]
+        else:
+            LR = A_[:, -2] + 1j*A_[:, -1]
+        UR = np.zeros(frf.shape[1], dtype=complex)
+    elif lower_r == False and upper_r == True:
+        LR = np.zeros(frf.shape[1], dtype=complex)
+        if frf_type == 'mobility':
+            UR = A_[:, -1] + 1j*A_[:, -2]
+        else:
+            UR = A_[:, -2] + 1j*A_[:, -1]
+    elif lower_r == False and upper_r == False:
+        LR = np.zeros(frf.shape[1], dtype=complex)
+        UR = np.zeros(frf.shape[1], dtype=complex)
+   
+    # FRF reconstruction
+    FRF_rec_ = np.einsum("fp,op", P, A_)
+    FRF_rec_r, FRF_rec_i = np.split(FRF_rec_, 2, axis=0)
+    FRF_rec = (FRF_rec_r + 1.j*FRF_rec_i).T
+   
+    return A, FRF_rec, LR, UR
