@@ -1,5 +1,5 @@
 The tutorial
-========
+============
 A case of typical usage is presented here.
 
 To use real code, take a look at the `showcase notebook <https://github.com/ladisk/pyEMA/blob/master/pyEMA%20Showcase.ipynb>`_.
@@ -14,7 +14,9 @@ Instance of the ``Model`` class
         frequency_array,
         lower=10,
         upper=10000,
-        pol_order_high=60
+        pol_order_high=60,
+        driving_point=3,
+        frf_type='accelerance'
     )
 
 ``frf_matrix`` and ``frequency vector`` arguments
@@ -42,7 +44,20 @@ the modal shapes.
 
 where ``j`` is the driving point index.
 
-For futhera description of the arguments, see :ref:`code documentation <code-doc-Model>`.
+``frf_type`` argument
+~~~~~~~~~~~~~~~~~~~~~
+This argument gives information about what type of FRF you are using. If the accelerations are measured and then the FRF is computed using the excitation data,
+the ``frf_type`` is ``acceleration``. If the speed is measured, the ``frf_type`` is ``mobility`` and if the displacement is measured, the ``frf_type`` is ``receptance``.
+
+It is possible to transition between accelerance, mobility and receptance:
+
+.. code:: python
+    
+    omega = 2 * np.pi * frequency_array
+    mobility = receptance * (1j*omega)
+    accelerance = receptance * (-omega**2)
+
+For further description of the arguments, see :ref:`code documentation <code-doc-Model>`.
 
 Compute the poles
 -----------------
