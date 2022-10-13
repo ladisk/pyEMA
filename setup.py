@@ -38,8 +38,9 @@ with open('README.rst', 'r') as f:
 
 setup(name='pyEMA',
       version=version,
-      author='Klemen Zaletelj, Tomaž Bregar, Domen Gorjup, Janko Slavič',
-      author_email='janko.slavic@fs.uni-lj.si, ladisk@gmail.com',
+      author='Klemen Zaletelj, Domen Gorjup, Janko Slavič, Tomaž Bregar, Miha Pogačar, et al.',
+      maintainer='Janko Slavič',
+      maintainer_email='janko.slavic@fs.uni-lj.si',
       description='Experimental and operational modal analysis.',
       url='https://github.com/ladisk/pyEMA',
       packages=['pyEMA'],

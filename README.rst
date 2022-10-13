@@ -5,6 +5,14 @@ Experimental and operational modal analysis
 
 Check out the `documentation`_.
 
+New in version 0.26
+-------------------
+- include (or exclude) upper and lower residuals
+- driving point implementation (scaling modal constants to modal shapes)
+- implementation of the LSFD method that assumes proportional damping (modal constants are real-valued)
+- FRF type implementation (enables the use of accelerance, mobility or receptance)
+
+
 Basic usage
 -----------
 
@@ -79,7 +87,7 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 |DOI|
 |Build Status|
 
-.. _documentation: https://pyema.readthedocs.io/en/latest/basic_usage.html
+.. _documentation: https://pyema.readthedocs.io/en/latest/index.html
 
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4016671.svg?
    :target: https://doi.org/10.5281/zenodo.4016671
