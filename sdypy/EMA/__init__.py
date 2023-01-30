@@ -1,4 +1,4 @@
-__version__ = "0.25"
+__version__ = "0.26"
 
 from .EMA import Model
 from .tools import *
