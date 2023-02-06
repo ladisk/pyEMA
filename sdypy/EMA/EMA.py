@@ -228,6 +228,12 @@ class Model():
         self.pole_xi = []
         self.partfactors = []
 
+        if self.freq[0] != 0:
+            df = self.freq[1] - self.freq[0]
+            freq_start = np.arange(0, self.freq[0], df)
+            self.freq = np.hstack((freq_start, self.freq))
+            self.frf = np.column_stack((np.zeros((len(freq_start), self.frf.shape[0])).T, self.frf))
+
         lower_ind = np.argmin(np.abs(self.freq - self.lower))
         n = self.pol_order_high * 2
         nf = 2 * (self.frf.shape[1] - 1)
