@@ -1,7 +1,37 @@
 pyEMA
 =====
 
-Experimental and operational modal analysis
+Experimental and operational modal analysis.
+
+------------
+
+``pyEMA`` is no **longer develped**. The **successor** of ``pyEMA`` is the `sdypy-EMA <https://github.com/sdypy/sdypy-EMA>`_ project, part of `sdypy <https://github.com/sdypy/sdypy>`_.
+
+All ``pyEMA`` functionality can be used by installing ``sdypy``:
+
+.. code:: cmd
+   
+   pip install sdypy
+
+and importing the ``EMA`` module:
+
+.. code:: python
+
+   from sdypy import EMA
+   
+Your existing code can stay exactly the same by changing the existing import:
+
+.. code:: python
+
+   import pyEMA
+   
+to:
+
+.. code:: python
+
+   from sdypy import EMA as pyEMA
+
+------------
 
 Check out the `documentation`_.
 
