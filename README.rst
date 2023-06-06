@@ -5,7 +5,7 @@ Experimental and operational modal analysis.
 
 ------------
 
-``pyEMA`` is no **longer develped**. The **successor** of ``pyEMA`` is the `sdypy-EMA <https://github.com/sdypy/sdypy-EMA>`_ project, part of `sdypy <https://github.com/sdypy/sdypy>`_.
+``pyEMA`` is no **longer develped**. The **successor** of ``pyEMA`` is part of `SDyPy <https://github.com/sdypy/sdypy>`_ project.
 
 All ``pyEMA`` functionality can be used by installing ``sdypy``:
 
@@ -19,7 +19,7 @@ and importing the ``EMA`` module:
 
    from sdypy import EMA
    
-Your existing code can stay exactly the same by changing the existing import:
+Your existing code can stay exactly the same by only changing the existing import from:
 
 .. code:: python
 
@@ -33,18 +33,8 @@ to:
 
 ------------
 
-Check out the `documentation`_.
-
-New in version 0.26
--------------------
-- include (or exclude) upper and lower residuals
-- driving point implementation (scaling modal constants to modal shapes)
-- implementation of the LSFD method that assumes proportional damping (modal constants are real-valued)
-- FRF type implementation (enables the use of accelerance, mobility or receptance)
-
-
-Basic usage
------------
+Basic ``pyEMA`` usage
+---------------------
 
 Make an instance of ``Model`` class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
