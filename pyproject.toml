@@ -1,0 +1,63 @@
+[build-system]
+requires = [
+    "hatchling",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyEMA"
+dynamic = ["version"]
+authors = [
+    { name = "Klemen Zaletelj" },
+    { name = "Domen Gorjup" },
+    { name = "Janko Slavič", email = "janko.slavic@fs.uni-lj.si" },
+    { name = "Tomaž Bregar" },
+    { name = "Miha Pogačar" },
+]
+maintainers = [
+    { name = "Janko Slavič", email = "janko.slavic@fs.uni-lj.si" },
+]
+license = "MIT"
+description = "Experimental and operational modal analysis (port of sdypy-EMA)."
+readme = "README.rst"
+keywords = [
+    "EMA",
+    "OMA",
+    "Experimental Modal Analysis",
+    "Structural Dynamics",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "sdypy-EMA>=0.29.1",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
+[project.urls]
+homepage = "https://github.com/ladisk/pyEMA"
+documentation = "https://pyema.readthedocs.io/en/latest/index.html"
+source = "https://github.com/sdypy/sdypy-EMA"
+issues = "https://github.com/sdypy/sdypy-EMA/issues"
+
+[tool.hatch.version]
+path = "pyEMA/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pyEMA"]
+exclude = ["*.bib"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "pyEMA/__init__.py",
+    "tests",
+]
