@@ -1,17 +1,21 @@
+"""Experimental and operational modal analysis.
+
+pyEMA is a port of sdypy-EMA (https://github.com/sdypy/sdypy-EMA), where the
+code is maintained. This package re-exports sdypy-EMA under the pyEMA name.
+"""
 __version__ = "0.26.1"
 
-# from .pyEMA import Model
-# from .tools import *
-# from . import stabilization
-# from . import normal_modes
-# from . import pole_picking
+import sys as _sys
 
-# Importing code from SDyPy-EMA package where it is maintained
-from sdypy.EMA import Model
-from sdypy.EMA.tools import *
-from sdypy.EMA import stabilization
-from sdypy.EMA import normal_modes
-from sdypy.EMA import pole_picking
+from sdypy.EMA import *
+from sdypy.EMA import EMA as pyEMA
+from sdypy.EMA import tools, stabilization, normal_modes, pole_picking
+
+# Register the submodules under the pyEMA name, so that e.g. `import pyEMA.tools`
+# returns sdypy.EMA.tools instead of looking for a file in this package.
+for _name in ("pyEMA", "tools", "stabilization", "normal_modes", "pole_picking"):
+    _sys.modules[f"{__name__}.{_name}"] = globals()[_name]
+del _name
 
 # pyEMA moving to SDyPy warning
 import warnings
