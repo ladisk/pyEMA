@@ -3,7 +3,7 @@
 pyEMA is a port of sdypy-EMA (https://github.com/sdypy/sdypy-EMA), where the
 code is maintained. This package re-exports sdypy-EMA under the pyEMA name.
 """
-__version__ = "0.26.1"
+__version__ = "0.27.0"
 
 import sys as _sys
 
