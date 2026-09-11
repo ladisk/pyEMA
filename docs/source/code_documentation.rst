@@ -33,8 +33,13 @@ In this case, the ``Model`` argument is passed automatically.
 Tools
 -----
 
-.. automodule:: pyEMA.tools
-    :members:
+.. autofunction:: pyEMA.tools.MAC
+
+.. autofunction:: pyEMA.tools.MSF
+
+.. autofunction:: pyEMA.tools.MCF
+
+.. autofunction:: pyEMA.tools.complex_freq_to_freq_and_damp
 
 
 Normal modes
