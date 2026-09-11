@@ -5,31 +5,28 @@ Experimental and operational modal analysis.
 
 ------------
 
-``pyEMA`` is no **longer develped**. The **successor** of ``pyEMA`` is part of `SDyPy <https://github.com/sdypy/sdypy>`_ project.
+``pyEMA`` is a port of `sdypy-EMA`_, which is part of the `SDyPy`_ project. The code is
+maintained in ``sdypy-EMA``; this package makes the same code available under the
+``pyEMA`` name, so that existing code keeps working.
 
-All ``pyEMA`` functionality can be used by installing ``sdypy``:
+**Please report issues and open pull requests at** `sdypy-EMA`_.
 
-.. code:: cmd
-
-   pip install sdypy
-
-and importing the ``EMA`` module:
-
-.. code:: python
-
-   from sdypy import EMA
-
-Your existing code can stay exactly the same by only changing the existing import from:
+Installing ``pyEMA`` also installs ``sdypy-EMA``. These two imports give the same code:
 
 .. code:: python
 
    import pyEMA
+   from sdypy import EMA as pyEMA
 
-to:
+For new code, use ``sdypy-EMA`` directly:
+
+.. code:: cmd
+
+   pip install sdypy-EMA
 
 .. code:: python
 
-   from sdypy import EMA as pyEMA
+   from sdypy import EMA
 
 ------------
 
@@ -111,6 +108,6 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4016671.svg?
    :target: https://doi.org/10.5281/zenodo.4016671
 
-.. _sdypy: https://github.com/sdypy/sdypy
+.. _SDyPy: https://github.com/sdypy/sdypy
 
-.. _sdypy-EMA: https://github.com/ladisk/sdypy-EMA
+.. _sdypy-EMA: https://github.com/sdypy/sdypy-EMA

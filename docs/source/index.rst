@@ -6,7 +6,7 @@
 Welcome to pyEMA's documentation!
 =================================
 
-``pyEMA`` is no **longer develped**. The **successor** of ``pyEMA`` is part of `SDyPy <https://github.com/sdypy/sdypy>`_ project.
+``pyEMA`` is a port of `sdypy-EMA <https://github.com/sdypy/sdypy-EMA>`_, which is part of the `SDyPy <https://github.com/sdypy/sdypy>`_ project. The code is maintained in ``sdypy-EMA``; please report issues and open pull requests there.
 
 .. toctree::
     :maxdepth: 2

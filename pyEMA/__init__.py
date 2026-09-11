@@ -16,7 +16,3 @@ from sdypy.EMA import tools, stabilization, normal_modes, pole_picking
 for _name in ("pyEMA", "tools", "stabilization", "normal_modes", "pole_picking"):
     _sys.modules[f"{__name__}.{_name}"] = globals()[_name]
 del _name
-
-# pyEMA moving to SDyPy warning
-import warnings
-warnings.warn('The imported code is channeled from the SDyPy package. It is recommended to use the SDyPy package instead of pyEMA. To use the latest code from SDyPy: `pip install sdypy` and `from sdypy import EMA`.', DeprecationWarning)
