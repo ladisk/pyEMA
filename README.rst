@@ -10,7 +10,7 @@ Experimental and operational modal analysis.
 All ``pyEMA`` functionality can be used by installing ``sdypy``:
 
 .. code:: cmd
-   
+
    pip install sdypy
 
 and importing the ``EMA`` module:
@@ -18,13 +18,13 @@ and importing the ``EMA`` module:
 .. code:: python
 
    from sdypy import EMA
-   
+
 Your existing code can stay exactly the same by only changing the existing import from:
 
 .. code:: python
 
    import pyEMA
-   
+
 to:
 
 .. code:: python
@@ -41,7 +41,7 @@ Make an instance of ``Model`` class:
 
 .. code:: python
 
-   a = pyema.Model(
+   a = pyEMA.Model(
        frf_matrix,
        frequency_array,
        lower=50,
@@ -59,12 +59,12 @@ Compute poles:
 Determine correct poles:
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The stable poles can be determined in two ways: 
+The stable poles can be determined in two ways:
 
 1. Display **stability chart**
 
 .. code:: python
-    
+
     a.select_poles()
 
 The stability chart displayes calculated poles and the user can hand-pick the stable ones.
@@ -73,7 +73,7 @@ The stability chart displayes calculated poles and the user can hand-pick the st
 
 .. code:: python
 
-    approx_nat_freq = [314, 864]     
+    approx_nat_freq = [314, 864]
     a.select_closest_poles(approx_nat_freq)
 
 After the stable poles are selected, the natural frequencies and damping coefficients can now be accessed:
@@ -86,7 +86,7 @@ After the stable poles are selected, the natural frequencies and damping coeffic
 Reconstruction:
 ~~~~~~~~~~~~~~~
 
-There are two types of reconstruction possible: 
+There are two types of reconstruction possible:
 
 1. Reconstruction using **own** poles (the default option):
 
@@ -100,7 +100,7 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 
 .. code:: python
 
-    c = pyema.Model(frf_matrix, frequency_array, lower=50, upper=10000, pol_order_high=60)
+    c = pyEMA.Model(frf_matrix, frequency_array, lower=50, upper=10000, pol_order_high=60)
 
     H, A = c.get_constants(whose_poles=a)
 
@@ -114,5 +114,3 @@ where **H** is reconstructed FRF matrix and **A** is a matrix of modal constants
 .. _sdypy: https://github.com/sdypy/sdypy
 
 .. _sdypy-EMA: https://github.com/ladisk/sdypy-EMA
-
-
