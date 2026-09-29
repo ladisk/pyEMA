@@ -28,7 +28,7 @@ keywords = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "sdypy-EMA>=0.29.1",
+    "sdypy-EMA>=0.31",
 ]
 classifiers = [
     "Intended Audience :: Developers",
