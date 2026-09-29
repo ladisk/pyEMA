@@ -1,0 +1,65 @@
+name: Create a Release on Tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: pip install build
+
+    - name: Check tag matches package version
+      run: |
+        TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+        PKG_VERSION=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' pyEMA/__init__.py)
+        if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+          echo "Tag v$TAG_VERSION does not match __version__ $PKG_VERSION in pyEMA/__init__.py"
+          exit 1
+        fi
+
+    - name: Build distribution
+      run: python -m build
+
+    - name: Create GitHub Release and upload artifacts
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+
+    - name: Store the distribution for publishing
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  # Trusted Publishing: PyPI accepts a short-lived OIDC token from this job, no API token secret.
+  # PyPI side: pyEMA > Settings > Publishing, with this workflow file and environment "pypi".
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pyEMA
+    permissions:
+      id-token: write
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
