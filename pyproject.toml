@@ -26,14 +26,16 @@ keywords = [
     "Experimental Modal Analysis",
     "Structural Dynamics",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
     "sdypy-EMA>=0.31",
 ]
 classifiers = [
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 
 [project.optional-dependencies]
